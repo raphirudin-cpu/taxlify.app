@@ -1,0 +1,165 @@
+<!-- templates/billing.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Billing</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .card { border:1px solid #ddd; padding:1em; margin-bottom:1em; border-radius:4px; }
+    table { width:100%; border-collapse:collapse; margin-top:.5em }
+    th,td { border:1px solid #ccc; padding:.5em; text-align:left }
+    .button-blue { background:#007BFF;color:#fff;padding:6px 12px;border:none;border-radius:4px;cursor:pointer }
+    .flash { padding:.8em; border-radius:4px; margin-bottom:1em }
+    .flash.success { background:#d4edda; color:#155724 }
+    .flash.warning { background:#fff3cd; color:#856404 }
+    .flash.danger  { background:#f8d7da; color:#721c24 }
+    .flash.info    { background:#d1ecf1; color:#0c5460 }
+    .inline-form { display:inline-block; margin-left:1em; }
+    /* Table styling borrowed from your tax‐years tables */
+    .billing-table, .invoice-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: .5em;
+    }
+    .billing-table th, .billing-table td,
+    .invoice-history-table th, .invoice-history-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    .billing-table th, .invoice-history-table th {
+      background-color: #007BFF;
+      color: white;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
+    <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
+  
+    {% if current_user.role == 'admin' %}
+      <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
+      <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
+      <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+      <a href="{{ url_for('billing.billing_index') }}">Billing</a>
+      <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
+    {% endif %}
+  
+    <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+  
+
+<div class="content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash {{cat}}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <h3>Existing Purchases</h3>
+  {% if purchases %}
+    <table class="billing-table">
+      <tr>
+        <th>Tax Year</th>
+        <th>Plan</th>
+        <th>Base</th>
+        <th>Extra</th>
+        <th>Total</th>
+        <th>Used</th>
+        <th>Reserved</th>
+        <th>Occupied</th>
+        <th>Remaining</th>
+        <th>Add More</th>
+      </tr>
+      {% for p in purchases %}
+      <tr>
+        <td>{{ p.tax_year }}</td>
+        <td>{{ p.plan_name }}</td>
+        <td>{{ p.base_slots }}</td>
+        <td>{{ p.extra_slots }}</td>
+        <td>{{ p.total_slots }}</td>
+        <td>{{ p.used_slots }}</td>
+        <td>{{ p.reserved_slots }}</td>
+        <td>{{ p.occupied_slots }}</td>
+        <td>{{ p.remaining_slots }}</td>
+        <td>
+          <form class="inline-form"
+                action="{{ url_for('billing.billing_update') }}"
+                method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="tax_year"  value="{{ p.tax_year }}">
+            <input type="number" name="extra_slots" min="1" placeholder="Slots" required>
+            <button class="button-blue">Add</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No purchases yet.</p>
+  {% endif %}
+
+    <h3>Purchase Slots for a New Tax Year</h3>
+    <div class="card">
+      <form action="{{ url_for('billing.billing_update') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="tax_year">Tax Year:</label>
+        <select name="tax_year" id="tax_year" required>
+          <option value="">— select year —</option>
+          {% for y in range(2000, 2100) %}
+            <option value="{{ y }}">{{ y }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="plan_id" style="margin-left:1em;">Plan:</label>
+        <select name="plan_id" id="plan_id" required>
+          <option value="">— select plan —</option>
+          {% for plan in plans %}
+            <option value="{{ plan.id }}">
+              {{ plan.name }} ({{ plan.base_slots }} slots – {{ plan.monthly_price }})
+            </option>
+          {% endfor %}
+        </select>
+
+        <button type="submit" class="button-blue" style="margin-left:1em;">
+          Purchase
+        </button>
+      </form>
+    </div>
+
+    <h3>Invoice History</h3>
+     {% if invoices %}
+       <table class="invoice-history-table">
+         <tr>
+           <th>Date</th>
+           <th>Amount</th>
+           <th>Description</th>
+           <th>Status</th>
+           <th>Download</th>
+         </tr>
+         {% for inv in invoices %}
+         <tr>
+           <td>{{ inv.date.strftime('%Y-%m-%d') }}</td>
+           <td>{{ inv.amount }}</td>
+           <td>{{ inv.description }}</td>
+           <td>{{ inv.status }}</td>
+           <td>
+             {% if inv.invoice_path %}
+               <a href="{{ inv.invoice_path }}" class="button-blue" target="_blank">Download</a>
+             {% else %}
+               Pending
+             {% endif %}
+           </td>
+         </tr>
+         {% endfor %}
+       </table>
+     {% else %}
+       <p>No invoices yet.</p>
+     {% endif %}
+  </div>
+</body>
+</html>

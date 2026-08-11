@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('settings.settings') }}">Settings</a>
+        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    
+    <div class="content">
+        <h2>Checklist für Steuerjahr {{ year }}</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if step == 0 %}
+            <p>Wir stellen Ihnen nun einige Fragen, um die benötigten Dokumente und Informationen zu erfassen. Klicken Sie auf Start, um zu beginnen.</p>
+            <form action="{{ url_for('checklist.checklist', year=tax_year.year, step=step) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="step" value="{{ step }}">
+                <button type="submit">Start</button>
+            </form>
+        {% else %}
+        <form action="{{ url_for('checklist.checklist', year=tax_year.year, step=step) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label for="answer">{{ question["question"] }}</label>
+                {% if question["type"] == "buttons" %}
+                    <div class="button-group">
+                        {% for option in question["options"] %}
+                            <input type="radio" id="answer_{{ option }}" name="answers" value="{{ option }}" required>
+                            <label for="answer_{{ option }}">{{ option }}</label>
+                        {% endfor %}
+                    </div>
+                {% elif question["type"] == "date" %}
+                    <input type="date" id="answer" name="answers" required>
+                {% else %}
+                    <input type="text" id="answer" name="answers" required>
+                {% endif %}
+            </div>
+            <input type="hidden" name="step" value="{{ step }}">  <!-- ✅ Fix: Ensure correct step submission -->
+            <input type="hidden" name="tax_year_id" value="{{ year }}">
+            <button type="submit">Next</button>
+        </form>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request More Documents</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group p {
+            margin: 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .navbar a {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('settings.settings') }}">Settings</a>
+        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Request More Documents for Tax Year {{ year }}</h2>
+        <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ user_id }}">
+            
+            <!-- Input for a new document request -->
+            <div>
+                <input type="text" id="documentRequestInput" placeholder="Enter document request">
+                <button type="button" class="button-blue" id="addRequestButton">Add</button>
+            </div>
+            
+            <!-- List to display added requests -->
+            <ul id="requestsList"></ul>
+            
+            <!-- Container for hidden inputs that will be submitted -->
+            <div id="hiddenInputs"></div>
+            
+            <!-- Final submit button -->
+            <button type="submit" class="button-blue">Submit Requests</button>
+        </form>
+    </div>
+    
+    <script>
+        document.getElementById('addRequestButton').addEventListener('click', function() {
+            var input = document.getElementById('documentRequestInput');
+            var value = input.value.trim();
+            if(value) {
+                // Create a list item for visual feedback
+                var li = document.createElement('li');
+                li.textContent = value;
+                document.getElementById('requestsList').appendChild(li);
+                
+                // Create a hidden input so the value is submitted with the form
+                var hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'requests';
+                hiddenInput.value = value;
+                document.getElementById('hiddenInputs').appendChild(hiddenInput);
+                
+                // Clear the input for the next request
+                input.value = '';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{# templates/view_feedback.html #}
+
+<style>
+  .feedback-header {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: #007BFF;
+  }
+  .feedback-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .feedback-item {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  .feedback-rating {
+    font-size: 1.1rem;
+    color: #FFD700;
+    margin-bottom: 8px;
+  }
+  .feedback-comment {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    color: #333;
+  }
+  .feedback-date {
+    font-size: 0.85rem;
+    color: #666;
+    text-align: right;
+  }
+  .no-feedback {
+    text-align: center;
+    color: #555;
+    font-style: italic;
+    padding: 20px 0;
+  }
+</style>
+
+<div class="feedback-header">Feedback for Tax Year {{ tax_year }}</div>
+
+{% if feedbacks %}
+  <ul class="feedback-list">
+    {% for f in feedbacks %}
+      <li class="feedback-item">
+        <div class="feedback-rating">
+          {%- for i in range(f.rating|int) -%}★{%- endfor -%}
+          {%- for i in range(5 - (f.rating|int)) -%}☆{%- endfor -%}
+          <span style="font-weight: normal; color: #333;"> {{ f.rating }}/5</span>
+        </div>
+        <div class="feedback-comment">{{ f.comment }}</div>
+        <div class="feedback-date">submitted on {{ f.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="no-feedback">No feedback for this year.</div>
+{% endif %}

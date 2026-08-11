@@ -1,0 +1,5 @@
+# Development / CI dependencies (install on top of runtime requirements).
+-r requirements.txt
+
+pytest==8.3.4
+ruff==0.8.4

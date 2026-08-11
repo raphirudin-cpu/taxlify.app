@@ -1,0 +1,331 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+}
+
+.navbar {
+    background-color: #007BFF;
+    padding: 10px;
+    color: white;
+    text-align: center;
+}
+
+.navbar a {
+    color: white;
+    margin: 0 15px;
+    text-decoration: none;
+    font-size: 16px;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+.content {
+    padding: 20px;
+}
+
+.success, .error {
+    margin: 15px 0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.advisors-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.advisors-table th, .advisors-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+.advisors-table th {
+    background-color: #007BFF;
+    color: white;
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.form-group button {
+    padding: 10px 15px;
+    background-color: #007BFF;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+}
+
+.form-group button:hover {
+    background-color: #0056b3;
+}
+
+.news-item {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.news-item h3 {
+    margin-top: 0;
+}
+
+.news-item small {
+    display: block;
+    margin-top: 10px;
+    color: #888;
+}
+
+.dropzone {
+    border: 2px dashed #007BFF;
+    background: #f9f9f9;
+    padding: 20px;
+    cursor: pointer;  /* ✅ Ensure clicking works */
+    display: block !important;  /* ✅ Force visibility */
+}
+
+/* Unified button styles for <a> and <button> */
+a.button-blue,
+button.button-blue {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    line-height: 1.5;      /* Set a consistent line height */
+    font-size: 14px;       /* Define the font size */
+    font-family: inherit;  /* Use the same font as the parent */
+}
+
+/* Remove default button appearance for consistency */
+button.button-blue {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Hover styles */
+a.button-blue:hover,
+button.button-blue:hover {
+    background-color: #0056b3;
+}
+
+/* Disabled button styles */
+button.button-blue:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button.button-blue:disabled:hover {
+    background-color: #007BFF;
+}
+/* Unified button styles for <a> and <button> */
+a.button-red,
+button.button-red {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    line-height: 1.5;      /* Set a consistent line height */
+    font-size: 14px;       /* Define the font size */
+    font-family: inherit;  /* Use the same font as the parent */
+}
+
+/* Remove default button appearance for consistency */
+button.button-red {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Hover styles */
+a.button-red:hover,
+button.button-red:hover {
+    background-color: #c82333;
+}
+
+/* Disabled button styles */
+button.button-red:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button.button-red:disabled:hover {
+    background-color: #dc3545;
+}
+
+/* Modal container: hidden by default */
+.modal {
+    display: none; /* Hide the modal by default */
+    position: fixed;
+    z-index: 1000; /* High value to appear on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4); /* Black background with opacity */
+}
+
+/* Modal content box */
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto; /* Center it */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Adjust as needed */
+    border-radius: 4px;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.custom-checkbox input {
+    display: none;
+}
+.custom-checkbox label {
+    position: relative;
+    padding-left: 35px;
+    cursor: pointer;
+}
+.custom-checkbox label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007BFF;
+    border-radius: 4px;
+    background-color: white;
+}
+.custom-checkbox input:checked + label::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 12px;
+    border: solid #007BFF;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+}
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* Unified button styles for <a> and <button> */
+a.button-green,
+button.button-green {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    line-height: 1.5;      /* Set a consistent line height */
+    font-size: 14px;       /* Define the font size */
+    font-family: inherit;  /* Use the same font as the parent */
+}
+
+/* Remove default button appearance for consistency */
+button.button-green {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Hover styles */
+a.button-green:hover,
+button.button-green:hover {
+    background-color: #218838;
+}
+
+/* Disabled button styles */
+button.button-green:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button.button-green:disabled:hover {
+    background-color: #28a745;
+}

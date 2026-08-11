@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Return PDF</title>
+</head>
+<body>
+    <h1>Tax Return</h1>
+    <p><strong>Tax Year:</strong> {{ tax_return.tax_year }}</p>
+    <p><strong>Total Income:</strong> ${{ tax_return.total_income }}</p>
+    <p><strong>Total Deductions:</strong> ${{ tax_return.total_deductions }}</p>
+    <p><strong>Net Tax:</strong> ${{ tax_return.net_tax }}</p>
+    <p><strong>Approved:</strong> {{ 'Yes' if tax_return.approved else 'No' }}</p>
+</body>
+</html>

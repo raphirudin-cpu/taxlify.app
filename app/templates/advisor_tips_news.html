@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tips and News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
+        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
+      
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
+          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
+          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
+          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
+        {% endif %}
+      
+        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+      </div>
+      
+    <div class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+        <h2>Wichtigste Dokumente</h2>
+
+        <h3>Login-Dokumente</h3>
+        <ul>
+            <li>Aufforderung Einreichung der Steuererklärung</li>
+        </ul>
+        
+        <h3>Einkünfte aus unselbständiger Erwerbstätigkeit</h3>
+        <ul>
+            <li>Lohnausweise</li>
+            <li>Lohnausweise Nebenerwerb (Feuerwehr, Kommissionen)</li>
+        </ul>
+
+        <h3>Einkünfte aus selbständiger Erwerbstätigkeit</h3>
+        <ul>
+            <li>Jahresabschluss Selbstständigkeit</li>
+        </ul>
+
+        <h3>Einkünfte aus Sozial- und anderen Versicherungen</h3>
+        <ul>
+            <li>EO Auszug der Ausgleichskasse</li>
+            <li>Bestätigung AHV/IV Renten & Pensionskassenrenten</li>
+            <li>Übersicht Arbeitslosengeld</li>
+            <li>Übersicht Krankentaggeld/Unfalltaggeld</li>
+        </ul>
+
+        <h3>Weitere Einkünfte Unterhaltsbeiträge</h3>
+        <ul>
+            <li>Erhaltene Unterhaltsbeiträge</li>
+            <li>Aufstellung Vermögen und Erträge aus unverteilter Erbschaft</li>
+            <li>Aufstellung erhaltene Erträge Erbschaften / Erbteilungsvertrag</li>
+            <li>Aufstellung erhaltene Erträge Schenkungen</li>
+            <li>Aufstellung erhaltene übrige Einkünfte</li>
+            <li>Aufstellung Kapitalabfindungen anstelle wiederkehrender Leistungen</li>
+        </ul>
+
+        <h3>Liegenschaften</h3>
+        <ul>
+            <li>Schätzungsverfügung der Steuerverwaltung</li>
+            <li>Belege über Liegenschaftsaufwendungen</li>
+            <li>Steuerbescheinigung Hypothek</li>
+            <li>Aufstellung Mieteinnahmen</li>
+        </ul>
+
+        <h3>Berufsauslagen</h3>
+        <ul>
+            <li>Belge/Rechnungen ÖV Abonnement</li>
+            <li>Belege/Rechnungen für Auslagen im Homeoffice (Büromöbel/Strom etc.)</li>
+            <li>Belege/Rechnungen für sonstige Auslagen (Berufskleider)</li>
+        </ul>
+
+        <h3>Wochenaufenthalter</h3>
+        <ul>
+            <li>Mietvertrag von zweiter Wohnung</li>
+        </ul>
+
+        <h3>Schuldzinsen / Unterhaltsbeiträge / Rentenleistungen</h3>
+        <ul>
+            <li>Darlehnsverträge</li>
+            <li>Zins & Kreditbescheinigungen</li>
+            <li>Aufstellung bezahlte Unterhaltsbeiträge</li>
+            <li>Belege Rentenzahlungen und dauernde Lasten, Wohnrecht</li>
+        </ul>
+
+        <h3>Beiträge an Vorsorgeeinrichtungen</h3>
+        <ul>
+            <li>Bescheinigung über Vorsorgebeiträge (2. Säule, 3. Säule)</li>
+        </ul>
+
+        <h3>Weitere Abzüge</h3>
+        <ul>
+            <li>Belege/Rechnungen Kosten für Kinderbetreuung durch Dritte</li>
+            <li>Belege bezahlte AHV-, IV- und EO-Beiträge nicht erwerbstätiger Personen</li>
+            <li>Studien Bescheinigung</li>
+            <li>Belege/Rechnungen der bezahlten Weiterbildungskosten</li>
+            <li>Versicherungsausweis Krankenkasse</li>
+            <li>Belege/Rechnungen von Zahnarztkosten, Naturmedizin, Sehhilfen (Brillen), etc.</li>
+            <li>Belege/Rechnungen von Behinderungsbedingte Kosten (Kosten Pflege- und Altersheim, Arztzeugnis)</li>
+            <li>Spendenbescheinigungen</li>
+        </ul>
+
+        <h3>Bewegliches Vermögen</h3>
+        <ul>
+            <li>Steuerausweis Bankkonten</li>
+            <li>Wertschriftenverzeichnisse der Banken</li>
+            <li>Auszug Wallets für Kryptowährungen</li>
+            <li>Bescheinigung Lebens- und Rentenversicherungen</li>
+            <li>Aufstellung sonstige Vermögenswerte</li>
+        </ul>
+    </div>
+</body>
+</html>

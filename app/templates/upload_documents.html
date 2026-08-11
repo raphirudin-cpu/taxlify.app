@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Documents</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+  <script>
+    Dropzone.autoDiscover = false;
+  </script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('settings.settings') }}">Settings</a>
+    <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+    <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+    <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+
+  <div class="content">
+    <h2>Upload Documents for Tax Year {{ tax_year }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if required_documents %}
+      <form id="upload-form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% for document in required_documents %}
+          <div class="form-group">
+            <label for="dropzone_{{ document.id }}">{{ document.document_name }}</label>
+            <div class="dropzone dz-custom" id="dropzone_{{ document.id }}">
+              <div class="dz-message">Drag and drop files here or click to upload.</div>
+            </div>
+          </div>
+        {% endfor %}
+        <button type="button" class="button-blue" id="upload-all" disabled>Upload Documents</button>
+        <div id="upload-warning" class="error" style="display: none;">❗ Please upload a file for each required document before submitting.</div>
+      </form>
+    {% else %}
+      <p class="error">No required documents found for this tax year.</p>
+    {% endif %}
+  </div>
+
+  <script id="upload-url" type="application/json">
+    {{ url_for('upload_documents.upload_documents', year=tax_year) | tojson | safe }}
+  </script>
+  <script type="application/json" id="required-documents-data">
+    {{ required_documents | tojson | safe }}
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var allDropzones = [];
+      var uploadBtn = document.getElementById("upload-all");
+      var warningMsg = document.getElementById("upload-warning");
+
+      var uploadUrl = JSON.parse(document.getElementById("upload-url").textContent.trim());
+      var requiredDocuments = JSON.parse(document.getElementById("required-documents-data").textContent);
+
+      function checkAllFilesSelected() {
+        return allDropzones.every(function (dz) {
+          return dz.files && dz.files.length > 0;
+        });
+      }
+
+      function updateUploadButtonState() {
+        if (checkAllFilesSelected()) {
+          uploadBtn.disabled = false;
+          warningMsg.style.display = "none";
+        } else {
+          uploadBtn.disabled = true;
+        }
+      }
+
+      setTimeout(function () {
+        requiredDocuments.forEach(function (doc) {
+          var dropzoneElement = document.getElementById("dropzone_" + doc.id);
+          if (!dropzoneElement) return;
+
+          var myDropzone = new Dropzone(dropzoneElement, {
+            url: uploadUrl.trim(),
+            paramName: "file",
+            autoProcessQueue: false,
+            uploadMultiple: false,
+            addRemoveLinks: true,
+            clickable: dropzoneElement,
+            maxFilesize: 5,
+            acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+            init: function () {
+              this.complete = false;
+              allDropzones.push(this);
+
+              this.on("sending", function (file, xhr, formData) {
+                formData.append("id", doc.id);
+              });
+
+              this.on("success", function (file, response) {
+                console.log("✅ Upload success:", response);
+              });
+
+              this.on("error", function (file, response) {
+                console.error("🚨 Upload failed:", response);
+              });
+
+              this.on("queuecomplete", function () {
+                this.complete = true;
+                if (allDropzones.every(dz => dz.complete)) {
+                  window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Documents+successfully+uploaded";
+                }
+              });
+
+              this.on("addedfile", updateUploadButtonState);
+              this.on("removedfile", updateUploadButtonState);
+            }
+          });
+        });
+
+        uploadBtn.addEventListener("click", function () {
+          if (!checkAllFilesSelected()) {
+            warningMsg.style.display = "block";
+            return;
+          }
+          warningMsg.style.display = "none";
+          allDropzones.forEach(function (dz) {
+            dz.processQueue();
+          });
+        });
+      }, 500);
+    });
+  </script>
+</body>
+</html>

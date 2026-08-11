@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Statistics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@^1.0.0"></script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('settings.settings') }}">Settings</a>
+    <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+    <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+    <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+
+  <div class="content">
+    <h2>Statistics</h2>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Add Data Button -->
+    <button class="button-blue" onclick="document.getElementById('addDataForm').style.display='block'">
+      Add Data
+    </button>
+
+    <!-- Add Data Form -->
+    <div id="addDataForm" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="document.getElementById('addDataForm').style.display='none'">&times;</span>
+        <h3>Add Data</h3>
+        <form action="{{ url_for('statistics.statistics') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label for="taxable_income">Taxable Income:</label>
+            <input type="number" step="0.01" id="taxable_income" name="taxable_income" required>
+          </div>
+          <div class="form-group">
+            <label for="taxable_assets">Taxable Assets:</label>
+            <input type="number" step="0.01" id="taxable_assets" name="taxable_assets" required>
+          </div>
+          <div class="form-group">
+            <label for="paid_taxes">Paid Taxes:</label>
+            <input type="number" step="0.01" id="paid_taxes" name="paid_taxes" required>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="button-blue">Add Data</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Data Entries Table -->
+    <h3 style="margin-top:2rem;">Data Entries</h3>
+    <table class="advisors-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Taxable Income</th>
+          <th>Taxable Assets</th>
+          <th>Paid Taxes</th>
+          <th>Edit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data_points %}
+        <tr>
+          <td>{{ row.date }}</td>
+          <td>{{ row.taxable_income }}</td>
+          <td>{{ row.taxable_assets }}</td>
+          <td>{{ row.paid_taxes }}</td>
+          <td>
+            <button
+              class="button-blue edit-btn"
+              data-id="{{ row.id }}"
+              data-date="{{ row.date }}"
+              data-income="{{ row.taxable_income }}"
+              data-assets="{{ row.taxable_assets }}"
+              data-taxes="{{ row.paid_taxes }}"
+            >Edit</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="document.getElementById('editModal').style.display='none'">&times;</span>
+        <h3>Edit Entry</h3>
+        <form id="editForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" id="edit_entry_id" name="entry_id">
+
+          <div class="form-group">
+            <label for="edit_date">Date:</label>
+            <input type="date" id="edit_date" name="edit_date" required>
+          </div>
+          <div class="form-group">
+            <label for="edit_taxable_income">Taxable Income:</label>
+            <input type="number" step="0.01" id="edit_taxable_income" name="edit_taxable_income" required>
+          </div>
+          <div class="form-group">
+            <label for="edit_taxable_assets">Taxable Assets:</label>
+            <input type="number" step="0.01" id="edit_taxable_assets" name="edit_taxable_assets" required>
+          </div>
+          <div class="form-group">
+            <label for="edit_paid_taxes">Paid Taxes:</label>
+            <input type="number" step="0.01" id="edit_paid_taxes" name="edit_paid_taxes" required>
+          </div>
+          <button type="submit" class="button-blue">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Chart Container -->
+    <canvas id="statisticsChart" width="400" height="200" style="margin-top:2rem;"></canvas>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Chart setup
+      const dates = JSON.parse('{{ data_points | map(attribute="date") | list | tojson | safe }}');
+      const taxableIncome = JSON.parse('{{ data_points | map(attribute="taxable_income") | list | tojson | safe }}');
+      const taxableAssets = JSON.parse('{{ data_points | map(attribute="taxable_assets") | list | tojson | safe }}');
+      const paidTaxes = JSON.parse('{{ data_points | map(attribute="paid_taxes") | list | tojson | safe }}');
+
+      new Chart(
+        document.getElementById('statisticsChart').getContext('2d'),
+        {
+          type: 'line',
+          data: {
+            labels: dates,
+            datasets: [
+              { label: 'Taxable Income', data: taxableIncome, borderColor: 'rgba(75, 192, 192, 1)', fill: false },
+              { label: 'Taxable Assets', data: taxableAssets, borderColor: 'rgba(54, 162, 235, 1)', fill: false },
+              { label: 'Paid Taxes', data: paidTaxes, borderColor: 'rgba(255, 99, 132, 1)', fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: {
+                type: 'time',
+                time: {
+                  unit: 'year',
+                  displayFormats: { year: 'YYYY' }
+                },
+                title: { display: true, text: 'Year' }
+              },
+              y: { beginAtZero: true, title: { display: true, text: 'Amount' } }
+            }
+          }
+        }
+      );
+
+      // Edit modal logic
+      const editModal = document.getElementById('editModal');
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('edit_entry_id').value = btn.dataset.id;
+          document.getElementById('edit_date').value = btn.dataset.date;
+          document.getElementById('edit_taxable_income').value = btn.dataset.income;
+          document.getElementById('edit_taxable_assets').value = btn.dataset.assets;
+          document.getElementById('edit_paid_taxes').value = btn.dataset.taxes;
+
+          document.getElementById('editForm').action = `/statistics/edit/${btn.dataset.id}`;
+          editModal.style.display = 'block';
+        });
+      });
+
+      // Close modals on outside click
+      window.onclick = e => {
+        if (e.target.classList.contains('modal')) {
+          e.target.style.display = 'none';
+        }
+      };
+    });
+  </script>
+</body>
+</html>

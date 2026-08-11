@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Additional Documents</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+  <script>
+    Dropzone.autoDiscover = false;
+  </script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('settings.settings') }}">Settings</a>
+    <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+    <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+    <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+  </div>
+  <div class="content">
+    <h2>Upload Additional Documents for Tax Year {{ tax_year }}</h2>
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    {% if additional_documents %}
+      <form id="upload-additional-form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% for doc in additional_documents %}
+          <div class="form-group">
+            <label for="dropzone_{{ doc.id }}">Request: {{ doc.request_text }}</label>
+            <div class="dropzone" id="dropzone_{{ doc.id }}">
+              <div class="dz-message">Drag and drop file here or click to select a file.</div>
+            </div>
+          </div>
+        {% endfor %}
+        <button type="button" class="button-blue" id="upload-all">Upload All Documents</button>
+      </form>
+    {% else %}
+      <p>No additional document requests found for this tax year.</p>
+    {% endif %}
+  </div>
+  
+  <!-- Pass the upload URL and additional documents data to JavaScript -->
+  <script id="upload-url" type="application/json">
+    {{ url_for('upload_additional_documents.upload_additional_documents', year=tax_year) | tojson | safe }}
+  </script>
+  <script id="additional-documents-data" type="application/json">
+    {{ additional_documents | tojson | safe }}
+  </script>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Retrieve and parse the upload URL
+      var uploadUrlElement = document.getElementById("upload-url");
+      var uploadUrl;
+      try {
+        uploadUrl = JSON.parse(uploadUrlElement.textContent.trim());
+      } catch (e) {
+        console.error("Error parsing upload URL:", e);
+        return;
+      }
+      
+      // Retrieve and parse the additional documents data
+      var additionalDocsElement = document.getElementById("additional-documents-data");
+      var additionalDocuments;
+      try {
+        additionalDocuments = JSON.parse(additionalDocsElement.textContent.trim());
+      } catch (e) {
+        console.error("Error parsing additional documents data:", e);
+        return;
+      }
+      
+      var allDropzones = [];
+      
+      // Iterate over each document request and initialize a Dropzone for it
+      additionalDocuments.forEach(function(doc) {
+        var docId = doc.id;
+        var dropzoneId = "dropzone_" + docId;
+        var dropzoneElement = document.getElementById(dropzoneId);
+        if (!dropzoneElement) {
+          console.error("Dropzone element not found for document ID:", docId);
+          return;
+        }
+        var dz = new Dropzone("#" + dropzoneId, {
+          url: uploadUrl,
+          paramName: "file",
+          autoProcessQueue: false,
+          maxFilesize: 5,
+          acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+          init: function() {
+            var myDropzone = this;
+            allDropzones.push(myDropzone);
+            // Append document id to the form data when sending.
+            myDropzone.on("sending", function(file, xhr, formData) {
+              formData.append("id", docId);
+            });
+            myDropzone.on("success", function(file, response) {
+              console.log("Upload success for document " + docId, response);
+            });
+            myDropzone.on("error", function(file, response) {
+              console.error("Upload error for document " + docId, response);
+            });
+          }
+        });
+      });
+      
+      // When the "Upload All Documents" button is clicked, process all queues.
+      document.getElementById("upload-all").addEventListener("click", function() {
+        allDropzones.forEach(function(dz) {
+          dz.processQueue();
+        });
+        // Redirect after uploads are initiated (adjust as needed).
+        window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Additional+documents+upload+initiated";
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Advisor Settings</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Your existing styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .form-group button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+        .success {
+            color: green;
+            margin-bottom: 15px;
+        }
+        .danger {
+            color: red;
+            margin-bottom: 15px;
+        }
+        .logo-preview {
+            margin-bottom: 15px;
+        }
+        .logo-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            display: block;
+        }
+        .team-members-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .team-members-table th, .team-members-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .team-members-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
+        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
+          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
+          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
+          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
+        {% endif %}
+        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    
+    <div class="content">
+        <h2>Settings</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form action="" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label for="company_name">Company Name:</label>
+                <input type="text" id="company_name" name="company_name" value="{{ advisor.name if advisor else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city" value="{{ advisor.city if advisor else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone" name="phone" value="{{ advisor.phone if advisor else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="website">Website:</label>
+                <input type="text" id="website" name="website" value="{{ advisor.website if advisor else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="company_email">Company Email:</label>
+                <input type="email" id="company_email" name="company_email" value="{{ advisor.email if advisor else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="logo">Upload Logo:</label>
+                <input type="file" id="logo" name="logo" accept="image/*">
+            </div>
+            <div class="form-group">
+                <button type="submit" name="update_settings">Save Settings</button>
+            </div>
+        </form>        
+        
+        {% if advisor and advisor.logo %}
+        <div class="logo-preview">
+            <label>Current Logo:</label>
+            <img src="{{ url_for('admin_settings.uploaded_logo', advisor_id=advisor.id, filename=advisor.logo.split('/')[-1]) }}" alt="Company Logo">
+            <form action="{{ url_for('admin_settings.delete_logo') }}" method="post" style="margin-top: 10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="form-group">
+                    <button type="submit">Delete Logo</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+        
+        <h2>Team Members</h2>
+        <!-- Add Member Form -->
+        <form action="" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="form-group">
+                <label for="team_member_email">Team Member Email:</label>
+                <input type="email" id="team_member_email" name="team_member_email" required>
+            </div>
+            <div class="form-group">
+                <button type="submit" name="add_team_member">Add Team Member</button>
+            </div>
+        </form>
+
+        <h3>Current Team Members</h3>
+        <table class="team-members-table">
+            <tr>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+            {% for member in team_members %}
+            <tr id="member-{{ member.id }}">
+                <td class="email-cell">{{ member.email }}</td>
+                <td>
+                    <form action="{{ url_for('admin_settings.remove_team_member') }}" method="post" style="display:inline; margin-left: 5px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="member_id" value="{{ member.id }}">
+                        <button type="submit" onclick="return confirm('Remove this member?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+</body>
+</html>

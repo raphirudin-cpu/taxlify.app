@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Advisor Details</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .feedback-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .feedback-table th, .feedback-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .feedback-table th {
+            background-color: #007BFF;
+            color: white;
+            text-align: left;
+        }
+        .star-rating {
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <h2>{{ advisor.name }}</h2>
+    <img src="{{ logo }}" alt="Logo" width="100" height="50">
+    <p>City: {{ advisor.city }}</p>
+    <p>Website: <a href="{{ advisor.website }}" target="_blank">{{ advisor.website }}</a></p>
+    <p>Email: <a href="mailto:{{ advisor.email }}">{{ advisor.email }}</a></p>
+    <p>Phone: {{ advisor.phone }}</p>
+    <p>Average Rating:
+        <span class="star-rating">
+            {% for i in range(average_rating|int) %}
+                ★
+            {% endfor %}
+            {% for i in range(5 - average_rating|int) %}
+                ☆
+            {% endfor %}
+        </span>
+    </p>
+
+    <h3>Feedback</h3>
+    {% if feedbacks|length > 0 %}
+    <table class="feedback-table">
+        <tr>
+            <th>Rating</th>
+            <th>Comment</th>
+            <th>User</th>
+            <th>Date</th>
+        </tr>
+        {% for fb in feedbacks %}
+        <tr>
+            <td>
+                <span class="star-rating">
+                    {% for i in range(fb.rating) %}
+                        ★
+                    {% endfor %}
+                    {% for i in range(5 - fb.rating) %}
+                        ☆
+                    {% endfor %}
+                </span>
+            </td>
+            <td>{{ fb.comment }}</td>
+            <td>
+                {{ fb.user_name[0] }}. {{ fb.user_surname[0] }}.
+            </td>
+            <td>{{ fb.created_at.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <p>No feedback received.</p>
+    {% endif %}
+</body>
+</html>

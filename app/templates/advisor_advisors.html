@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advisors</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Include Select2 CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+  <style>
+    .success, .error {
+      margin: 15px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    .filter-bar {
+      margin-bottom: 20px;
+    }
+    .filter-bar input, .filter-bar select {
+      margin-right: 10px;
+      padding: 5px;
+    }
+    .advisors-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .advisors-table th, .advisors-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    .advisors-table th {
+      background-color: #007BFF;
+      color: white;
+      text-align: left;
+      cursor: pointer;
+    }
+    .advisor-link {
+      cursor: pointer;
+      color: #007BFF;
+      text-decoration: underline;
+    }
+    .advisor-link:hover {
+      color: #0056b3;
+    }
+    .star-rating {
+      color: #FFD700;
+    }
+    .button-blue {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .button-blue:hover {
+      background-color: #0056b3;
+    }
+    /* Modal styles for advisor details */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover, .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .sorttable_nosort {
+      cursor: default !important;
+      pointer-events: none;
+    }
+  </style>
+  <!-- Removed sorttable.js -->
+  <!-- Include jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Include Select2 JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+  <!-- Include jQuery Tablesorter -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
+        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
+      
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
+          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
+          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
+          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
+        {% endif %}
+      
+        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+      </div>
+      
+    
+  <div class="content">
+    <h2>Advisors</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <!-- Filter and Search Bar -->
+    <div class="filter-bar">
+      <input type="text" id="advisorSearch" placeholder="Search by Advisor Name" onkeyup="filterTable()">
+      
+      <!-- City Filter: searchable dropdown -->
+      <select id="cityFilter" class="select2">
+        <option value="">All Cities</option>
+        {% set cities = advisors|map(attribute='city')|reject('equalto', None)|unique %}
+        {% for city in cities %}
+        <option value="{{ city }}">{{ city }}</option>
+        {% endfor %}
+      </select>
+      
+      <!-- Rating Filter: searchable dropdown -->
+      <select id="ratingFilter" class="select2">
+        <option value="">All Ratings</option>
+        <option value="5">5 Stars</option>
+        <option value="4">4 Stars & Up</option>
+        <option value="3">3 Stars & Up</option>
+        <option value="2">2 Stars & Up</option>
+        <option value="1">1 Star & Up</option>
+      </select>
+    </div>
+    
+    <!-- Sortable table -->
+    <table class="advisors-table" id="advisorsTable">
+      <thead>
+        <tr>
+          <th class="sorttable_nosort">Logo</th>
+          <th>Name</th>
+          <th>Ratings</th>
+          <th>City</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for adv in advisors %}
+        <tr>
+          <td>
+            {% if adv.logo %}
+              <img src="{{ adv.logo }}" alt="Logo" width="100" height="50">
+            {% else %}
+              <img src="{{ url_for('static', filename='no_logo.png') }}" alt="No Logo" width="150" height="50">
+            {% endif %}
+          </td>                  
+          <td>
+            <span class="advisor-link" onclick="openAdvisorDetails('{{ adv.id }}')">
+              {{ adv.name }}
+            </span>
+          </td>
+          <!-- Include a data-sort-value attribute for proper numeric sorting -->
+          <td data-sort-value="{{ adv.average_rating }}">
+            <span class="star-rating">
+              {% for i in range(adv.average_rating|int) %}
+                ★
+              {% endfor %}
+              {% for i in range(5 - adv.average_rating|int) %}
+                ☆
+              {% endfor %}
+            </span>
+          </td>
+          <td>{{ adv.city }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal for Advisor Details -->
+  <div id="advisorDetailsModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAdvisorDetails()">&times;</span>
+      <div id="advisorDetailsContent"></div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Select2 for dropdown filters
+    $(document).ready(function() {
+      $('.select2').select2({
+        placeholder: "Select an option",
+        allowClear: true,
+        width: 'resolve'
+      }).on('change', function(){
+        filterTable();
+      });
+
+      // Initialize Tablesorter on the advisors table.
+      // Disable sorting on the "Logo" column (index 0).
+      $("#advisorsTable").tablesorter({
+        headers: {
+          0: { sorter: false }
+        },
+        // Custom text extraction: if a cell has a data-sort-value attribute, use it.
+        textExtraction: function(node) {
+          var $node = $(node);
+          return $node.attr("data-sort-value") || $node.text();
+        }
+      });
+    });
+
+    // Function to filter table rows based on search and filter criteria
+    function filterTable() {
+      var searchInput = document.getElementById('advisorSearch').value.toLowerCase();
+      var cityFilter = $('#cityFilter').val().toLowerCase();
+      var ratingFilter = $('#ratingFilter').val();
+      var table = document.getElementById('advisorsTable');
+      var tr = table.getElementsByTagName('tr');
+
+      // Loop through all rows (skip the header row)
+      for (var i = 1; i < tr.length; i++) {
+        var tdName = tr[i].getElementsByTagName('td')[1];
+        var tdRating = tr[i].getElementsByTagName('td')[2];
+        var tdCity = tr[i].getElementsByTagName('td')[3];
+
+        if (tdName && tdRating && tdCity) {
+          var nameValue = tdName.textContent || tdName.innerText;
+          var cityValue = tdCity.textContent || tdCity.innerText;
+          // Count the number of filled stars (★) as rating
+          var ratingText = tdRating.textContent || tdRating.innerText;
+          var ratingValue = (ratingText.match(/★/g) || []).length;
+
+          var matchesSearch = nameValue.toLowerCase().indexOf(searchInput) > -1;
+          var matchesCity = (cityFilter === "") || (cityValue.toLowerCase() === cityFilter);
+          var matchesRating = (ratingFilter === "") || (ratingValue >= parseInt(ratingFilter));
+
+          tr[i].style.display = (matchesSearch && matchesCity && matchesRating) ? "" : "none";
+        }
+      }
+    }
+
+    // Functions to open and close the Advisor Details modal
+    function openAdvisorDetails(advisorId) {
+      fetch('{{ url_for("advisor_details.advisor_details") }}?advisor_id=' + advisorId)
+        .then(response => response.text())
+        .then(data => {
+          document.getElementById('advisorDetailsContent').innerHTML = data;
+          document.getElementById('advisorDetailsModal').style.display = "block";
+        });
+    }
+    function closeAdvisorDetails() {
+      document.getElementById('advisorDetailsModal').style.display = "none";
+    }
+    window.onclick = function(event) {
+      var modal = document.getElementById('advisorDetailsModal');
+      if (event.target == modal) {
+        closeAdvisorDetails();
+      }
+    }
+  </script>
+</body>
+</html>

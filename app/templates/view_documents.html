@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Documents</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar {
+            background-color: #007BFF;
+            padding: 15px;
+            text-align: center;
+        }
+        .navbar a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .button-blue {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .button-blue:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
+        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
+        {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+        {% endif %}
+        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Documents for Tax Year {{ tax_year.year }}</h2>
+        {% if uploaded_documents|length == 0 %}
+            <p>No documents uploaded.</p>
+        {% else %}
+        <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ tax_year.user_id }}">
+            <button type="submit" name="download_all" class="button-blue">Download All</button>
+        </form>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Document ID</th>
+                        <th>Document Name</th>
+                        <th>Uploaded On</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in uploaded_documents %}
+                    <tr>
+                        <td>{{ document.id }}</td>
+                        <td>{{ document.file_path.split('/')[-1] }}</td>
+                        <td>{{ document.uploaded_on }}</td>
+                        <td>
+                            <a class="button-blue" href="{{ url_for('documents.view_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Download</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>

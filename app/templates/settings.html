@@ -1,0 +1,133 @@
+<!-- templates/settings.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('settings.settings') }}">Settings</a>
+        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
+        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
+        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Settings</h2>
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Profile Update Form -->
+        <form action="{{ url_for('settings.settings') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="form_name" value="profile">
+            <h3>Profile Information</h3>
+            <!-- existing fields... -->
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name"
+                       value="{{ '' if user.lastname == 'None' else user.lastname }}" required>
+            </div>
+            <div class="form-group">
+                <label for="surname">Surname:</label>
+                <input type="text" id="surname" name="surname"
+                       value="{{ '' if user.firstname == 'None' else user.firstname }}" required>
+            </div>
+            <div class="form-group">
+                <label for="street">Street:</label>
+                <input type="text" id="street" name="street"
+                       value="{{ '' if user.street == 'None' else user.street }}" required>
+            </div>
+            <div class="form-group">
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city"
+                       value="{{ '' if user.city == 'None' else user.city }}" required>
+            </div>
+            <div class="form-group">
+                <label for="zip_code">Zip Code:</label>
+                <input type="text" id="zip_code" name="zip_code"
+                       value="{{ '' if user.zipcode == 'None' else user.zipcode }}" required>
+            </div>
+            <div class="form-group">
+                <label for="birthday">Birthday:</label>
+                <input type="date" id="birthday" name="birthday"
+                       value="{{ '' if user.birthday == 'None' else user.birthday }}" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number:</label>
+                <input type="text" id="phone" name="phone"
+                       value="{{ '' if user.phone == 'None' else user.phone }}" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email"
+                       value="{{ '' if user.email == 'None' else user.email }}" required>
+            </div>
+            <div class="form-group">
+                <label for="contact_option">Preferred Contact Option:</label>
+                <select id="contact_option" name="contact_option" required>
+                    <option value="">Select an option</option>
+                    <option value="email"    {% if user.contact_option == 'email' %}selected{% endif %}>E-Mail</option>
+                    <option value="sms"      {% if user.contact_option == 'sms' %}selected{% endif %}>SMS</option>
+                    <option value="whatsapp" {% if user.contact_option == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Notifications:</label>
+                <div class="custom-checkbox">
+                    <input type="checkbox" id="notify_status_changes" name="notify_status_changes"
+                           {% if user.notify_status_changes %}checked{% endif %}>
+                    <label for="notify_status_changes">Status Changes</label>
+                </div>
+                <div class="custom-checkbox">
+                    <input type="checkbox" id="notify_new_requests" name="notify_new_requests"
+                           {% if user.notify_new_requests %}checked{% endif %}>
+                    <label for="notify_new_requests">New requests from Advisor</label>
+                </div>
+                <div class="custom-checkbox">
+                    <input type="checkbox" id="notify_deadline" name="notify_deadline"
+                           {% if user.notify_deadline %}checked{% endif %}>
+                    <label for="notify_deadline">Deadline of Tax Return is due</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <button type="submit">Save Settings</button>
+            </div>
+        </form>
+
+        <hr>
+
+        <!-- Password Change Form -->
+        <form action="{{ url_for('settings.settings') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="form_name" value="password">
+            <h3>Change Password</h3>
+            <div class="form-group">
+                <label for="old_password">Current Password:</label>
+                <input type="password" id="old_password" name="old_password" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">New Password:</label>
+                <input type="password" id="new_password" name="new_password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">Change Password</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

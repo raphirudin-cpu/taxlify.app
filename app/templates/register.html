@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register</title>
+  <!-- If using an external CSS file, uncomment and update the path:
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  -->
+  <style>
+    /* =====================
+       RESET / BASIC STYLES
+       ===================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #1f2937;
+    }
+
+    /* =====================
+       CONTAINER STYLES
+       ===================== */
+    .auth-container {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      width: 350px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .auth-container h1 {
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      color: #111827;
+    }
+
+    /* =====================
+       FORM STYLES
+       ===================== */
+    form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    label {
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 0.95rem;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      transition: border-color 0.2s ease;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    button[type="submit"] {
+      background: #3b82f6;
+      color: #ffffff;
+      font-size: 1rem;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button[type="submit"]:hover {
+      background: #2563eb;
+    }
+
+    /* =====================
+       ROLE SELECTION
+       ===================== */
+    .role-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .role-group label {
+      font-size: 0.85rem;
+      color: #4b5563;
+      margin-left: 0.25rem;
+    }
+
+    .role-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    /* =====================
+       FLASH MESSAGES
+       ===================== */
+    .messages {
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    .messages ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .messages li {
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    /* Example styling for success/error messages */
+    .messages li.success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    .messages li.error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* =====================
+       FOOTER LINKS
+       ===================== */
+    .footer-links {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .footer-links a {
+      margin: 0 0.5rem;
+      color: #3b82f6;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* =====================
+       ADDITIONAL TEXT
+       ===================== */
+    .additional-text {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      text-align: center;
+      color: #6b7280;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <h1>Register</h1>
+
+    <!-- Registration Form -->
+    <form method="POST" action="{{ url_for('auth.register') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <!-- Email -->
+      <div>
+        <label for="email">Email</label>
+        <input 
+          type="email"
+          name="email"
+          id="email"
+          placeholder="Enter your email"
+          required
+        />
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label for="password">Password</label>
+        <input 
+          type="password"
+          name="password"
+          id="password"
+          placeholder="Enter your password"
+          required
+        />
+      </div>
+
+      <!-- Confirm Password -->
+      <div>
+        <label for="confirm_password">Confirm Password</label>
+        <input 
+          type="password"
+          name="confirm_password"
+          id="confirm_password"
+          placeholder="Re-enter your password"
+          required
+        />
+      </div>
+
+      <!-- Role Selection -->
+      <div class="role-group">
+        <span style="font-weight: 500;">Select Role:</span>
+        <div class="role-options">
+          <input
+            type="radio"
+            name="role"
+            id="role_user"
+            value="user"
+            checked
+          />
+          <label for="role_user">User</label>
+
+          <input
+            type="radio"
+            name="role"
+            id="role_advisor"
+            value="advisor"
+          />
+          <label for="role_advisor">Advisor - Teammember</label>
+
+          <input
+            type="radio"
+            name="role"
+            id="role_admin"
+            value="admin"
+          />
+          <label for="role_admin">Advisor - Manager</label>
+        </div>
+      </div>
+
+      <!-- Country -->
+      <div>
+        <label for="country">Country</label>
+        <select
+          name="country"
+          id="country"
+          required
+          style="width:100%; padding:0.75rem; font-size:0.95rem; border:1px solid #d1d5db; border-radius:4px; transition:border-color 0.2s ease;"
+        >
+          <option value="Switzerland" selected>Switzerland</option>
+        </select>
+      </div>
+
+      <!-- Account Type -->
+      <div class="role-group">
+        <span style="font-weight:500;">Account Type:</span>
+        <div class="role-options">
+          <input
+            type="radio"
+            name="account_type"
+            id="type_individual"
+            value="individual"
+            checked
+          />
+          <label for="type_individual">Individual</label>
+
+          <input
+            type="radio"
+            name="account_type"
+            id="type_institution"
+            value="institution"
+          />
+          <label for="type_institution">Institution</label>
+        </div>
+      </div>
+
+
+      <button type="submit">Register</button>
+    </form>
+  
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="messages">
+          <ul>
+            {% for category, message in messages %}
+              <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Already have an account? -->
+    <p class="additional-text">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" style="color: #3b82f6; text-decoration: none;">
+        Login here
+      </a>
+    </p>
+  </div>
+
+</body>
+</html>
