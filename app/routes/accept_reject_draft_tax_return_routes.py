@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import db, TaxYear
+from app.audit import log_action
 from sqlalchemy.exc import SQLAlchemyError
 
 draft_tax_return_action_bp = Blueprint('draft_tax_return_action', __name__)
@@ -46,6 +47,7 @@ def draft_tax_return_action():
             raise Exception("Invalid action.")
 
         db.session.commit()
+        log_action('draft.' + action, target_type='tax_year', target_id=tax_year_value)
     except SQLAlchemyError as e:
         db.session.rollback()
         flash("Error updating draft tax return.", "error")

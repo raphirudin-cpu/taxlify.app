@@ -1,11 +1,55 @@
 # app/routes/settings.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+import os
+import shutil
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import login_required, current_user, logout_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.models import db, User
+from app.models import (
+    db, User, TaxYear, Quote, Feedback, UserStatistics, Subscription, Invoice,
+    TaxReturn, ChecklistAnswer, RequiredDocument, DocumentRequest, AuditLog,
+)
+from app.audit import log_action
 
 settings_bp = Blueprint('settings', __name__)
+
+
+@settings_bp.route('/settings/delete_account', methods=['POST'])
+@login_required
+def delete_account():
+    """Client self-service account deletion: cascade the user's data + files.
+    Advisors/admins have business data (quotes, clients, team) and must go
+    through support."""
+    if current_user.role != 'user':
+        flash("Bitte kontaktiere den Support, um dein Konto zu löschen.", "error")
+        return redirect(url_for('advisor_settings.advisor_settings'))
+
+    uid = current_user.id
+    try:
+        # children referencing tax_years first, then user-scoped rows, then user
+        for model in (ChecklistAnswer, RequiredDocument, DocumentRequest,
+                      Quote, Feedback, UserStatistics, Subscription, Invoice,
+                      TaxReturn, AuditLog):
+            model.query.filter_by(user_id=uid).delete(synchronize_session=False)
+        TaxYear.query.filter_by(user_id=uid).delete(synchronize_session=False)
+        db.session.delete(User.query.get(uid))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("account deletion failed for user=%s", uid)
+        flash("Konto konnte nicht gelöscht werden. Bitte kontaktiere den Support.", "error")
+        return redirect(url_for('settings.settings'))
+
+    # remove the user's uploaded files from both possible roots
+    for root in (os.path.join(current_app.root_path, 'uploads', str(uid)),
+                 os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', str(uid)))):
+        if os.path.isdir(root):
+            shutil.rmtree(root, ignore_errors=True)
+
+    log_action('account.delete', detail=f"user={uid}", user_id=None)  # anonymized, survives deletion
+    logout_user()
+    flash("Dein Konto wurde gelöscht.", "success")
+    return redirect(url_for('auth.login'))
 
 @settings_bp.route('/settings', methods=['GET', 'POST'])
 @login_required

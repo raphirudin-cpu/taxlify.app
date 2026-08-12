@@ -5,6 +5,7 @@ from app import db
 from app.models import User
 from app.utils.email_token import generate_confirmation_token, confirm_token
 from app.utils.email_tasks import send_confirmation_email
+from app.audit import log_action
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 # Note: the Flask-Login manager and user_loader live in app/__init__.py.
@@ -28,12 +29,14 @@ def login():
                 return redirect(url_for('auth.login'))
 
             login_user(user)
+            log_action('auth.login')
             flash('Erfolgreich angemeldet.', 'success')
             if user.role in ('admin', 'advisor'):
                 return redirect(url_for('advisor_dashboard.advisor_dashboard'))
             else:
                 return redirect(url_for('dashboard.dashboard'))
         else:
+            log_action('auth.login_failed', detail=email)
             flash('E-Mail oder Passwort ist falsch.', 'error')
 
     return render_template('login.html')
@@ -83,6 +86,7 @@ def register():
             current_app.logger.error(f"Failed to queue emails for {email}: {str(e)}")
             flash('E-Mails konnten nicht gesendet werden. Bitte kontaktiere den Support.', 'error')
 
+        log_action('auth.register', target_type='user', target_id=new_user.id, detail=role, user_id=new_user.id)
         flash('Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse.', 'success')
         return redirect(url_for('auth.login'))
 
@@ -109,6 +113,7 @@ def confirm_email(token):
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    log_action('auth.logout')
     logout_user()
     flash('Du wurdest abgemeldet.', 'success')
     return redirect(url_for('auth.login'))

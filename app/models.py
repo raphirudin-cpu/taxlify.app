@@ -173,6 +173,21 @@ class DocumentRequest(db.Model):
     downloaded_on = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class AuditLog(db.Model):
+    """Activity trail of user actions (who did what, when). Best-effort — writing
+    an entry never blocks the underlying request (see app.audit.log_action)."""
+    __tablename__ = 'audit_log'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    action = db.Column(db.String(80), nullable=False)          # e.g. 'quote.accept'
+    target_type = db.Column(db.String(40), nullable=True)       # e.g. 'tax_year'
+    target_id = db.Column(db.Integer, nullable=True)
+    ip = db.Column(db.String(64), nullable=True)
+    detail = db.Column(db.Text, nullable=True)                  # short human/JSON note
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
 class Plan(db.Model):
     __tablename__ = 'plans'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

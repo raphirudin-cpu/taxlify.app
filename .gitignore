@@ -23,3 +23,6 @@ app/uploads/
 *.swp
 .idea/
 .vscode/
+
+# Application logs
+logs/

@@ -30,3 +30,6 @@ reportlab==4.4.3
 
 # Config
 python-dotenv==1.1.1
+
+# Error monitoring (optional — only active when SENTRY_DSN is set)
+sentry-sdk[flask]==2.67.1

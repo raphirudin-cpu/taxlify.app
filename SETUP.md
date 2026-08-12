@@ -123,9 +123,17 @@ PREFERRED_URL_SCHEME=https
 That's the whole deployment. reportlab (the only PDF lib) is pure-Python, so no
 system packages / Nixpacks config are needed.
 
+## Observability
+- **Sentry** is optional and off by default. Set `SENTRY_DSN` in `.env` (from your
+  Sentry project) to enable error alerts. PII is never sent (`send_default_pii=False`).
+- **File logs** (tracebacks/debug) write to `logs/taxlify.log` (rotating). Tune with
+  `LOG_LEVEL` / `LOG_DIR`. `logs/` is git-ignored.
+- **Audit trail**: user actions (login, register, quote/document/return decisions,
+  account deletion) are recorded in the `audit_log` table via `app/audit.py`.
+
 ## Notes
-- `.env`, `uploads/`, `app/uploads/`, and `*.rdb` are git-ignored — never commit
-  secrets or client tax documents.
+- `.env`, `uploads/`, `app/uploads/`, `logs/`, and `*.rdb` are git-ignored — never
+  commit secrets or client tax documents.
 - Debug mode is **off** unless `FLASK_DEBUG=1`. Never enable it in production.
 - **Uploaded files**: `uploads/` is on local disk. Railway's filesystem is
   ephemeral (wiped on redeploy), so attach a **Railway Volume** (or move to

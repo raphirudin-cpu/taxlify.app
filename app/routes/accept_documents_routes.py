@@ -2,6 +2,7 @@ from flask import Blueprint, request, redirect, url_for, flash, current_app
 from flask_login import login_required
 from app.models import db
 from app.security import require_role, tax_year_for_request, parse_int
+from app.audit import log_action
 from sqlalchemy.exc import SQLAlchemyError
 
 documents_action_bp = Blueprint('documents_action', __name__)
@@ -39,6 +40,7 @@ def documents_action():
             raise Exception("Invalid action.")
         
         db.session.commit()
+        log_action('documents.' + action, target_type='tax_year', target_id=tax_year_int)
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("documents_action DB error")

@@ -77,6 +77,13 @@ class BaseConfig:
     CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
     CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
+    # --- Error monitoring / logging ---
+    SENTRY_DSN = os.environ.get("SENTRY_DSN")  # unset => Sentry disabled
+    SENTRY_TRACES_SAMPLE_RATE = float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.0"))
+    SENTRY_ENVIRONMENT = os.environ.get("APP_ENV") or os.environ.get("FLASK_ENV") or "production"
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+    LOG_DIR = os.environ.get("LOG_DIR", "logs")
+
     # --- CSRF ---
     WTF_CSRF_TIME_LIMIT = None  # tokens valid for the session lifetime
 

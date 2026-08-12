@@ -22,9 +22,45 @@ login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 
 
+def _configure_observability(app):
+    """Sentry (gated on SENTRY_DSN) + rotating file logging for tracebacks."""
+    dsn = app.config.get("SENTRY_DSN")
+    if dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=dsn,
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=app.config.get("SENTRY_TRACES_SAMPLE_RATE", 0.0),
+            environment=app.config.get("SENTRY_ENVIRONMENT", "production"),
+            send_default_pii=False,  # never ship client PII to Sentry
+        )
+
+    if not app.testing:
+        import logging
+        from logging.handlers import RotatingFileHandler
+        log_dir = app.config.get("LOG_DIR", "logs")
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+            handler = RotatingFileHandler(
+                os.path.join(log_dir, "taxlify.log"), maxBytes=2_000_000, backupCount=5
+            )
+            handler.setFormatter(logging.Formatter(
+                "%(asctime)s %(levelname)s [%(name)s] %(message)s"
+            ))
+            level = app.config.get("LOG_LEVEL", "INFO")
+            handler.setLevel(level)
+            app.logger.addHandler(handler)
+            app.logger.setLevel(level)
+        except OSError:
+            app.logger.warning("Could not set up file logging in %s", log_dir)
+
+
 def create_app(config_class=None):
     app = Flask(__name__)
     app.config.from_object(config_class or get_config())
+
+    _configure_observability(app)
 
     # === Init Extensions ===
     db.init_app(app)

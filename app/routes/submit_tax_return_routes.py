@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from app.models import db, TaxYear
 from app.security import require_role, tax_year_for_request, parse_int
 from app.helpers import upload_path
+from app.audit import log_action
 from flask import Blueprint
 
 submit_tax_return_bp = Blueprint('submit_tax_return', __name__)
@@ -71,7 +72,8 @@ def upload_tax_return():
         tax_year_record.draft_tax_return_submitted = 1
         tax_year_record.status = "Draft tax return submitted"
         db.session.commit()
-        flash("Tax return successfully submitted.", "success")
+        log_action('draft.submit', target_type='tax_year', target_id=year, detail=f"user={user_id}")
+        flash("Entwurf erfolgreich eingereicht.", "success")
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Draft tax return DB update failed")

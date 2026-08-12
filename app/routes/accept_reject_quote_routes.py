@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import db, Quote, TaxYear
+from app.audit import log_action
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
 
@@ -55,6 +56,7 @@ def quote_action():
             raise Exception("Invalid action.")
         # Commit once after all changes
         db.session.commit()
+        log_action('quote.' + action, target_type='tax_year', target_id=tax_year)
     except SQLAlchemyError as e:
         db.session.rollback()
         flash("Error updating quote.", "error")

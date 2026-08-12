@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user, logout_user
 from app.models import db, User, TaxYear, Quote, Feedback, Advisor, RequiredDocument, UserStatistics
 from app.security import tax_year_for_request, advisor_is_bound, send_stored_file
+from app.audit import log_action
 from datetime import datetime, timedelta
 import os
 
@@ -317,7 +318,8 @@ def withdraw_quote(tax_year_id):
     tax_year_record.status = "Quote withdrawn"
 
     db.session.commit()
-    flash("Quote withdrawn successfully.", "success")
+    log_action('quote.withdraw', target_type='tax_year', target_id=tax_year_record.year)
+    flash("Anfrage zurückgezogen.", "success")
     return jsonify({"success": "Quote withdrawn successfully."})
 
 

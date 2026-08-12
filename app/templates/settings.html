@@ -110,6 +110,35 @@
     </form>
   </div>
 </div>
+
+{# ---- Gefahrenzone ---- #}
+<div style="max-width:760px;">
+  <div class="card" style="margin-top:20px; border-color:var(--danger-chip-bg);">
+    <div class="card-title" style="margin-bottom:8px;">Konto löschen</div>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5; margin-bottom:16px;">
+      Dein Konto und alle zugehörigen Daten (Steuerjahre, Belege, Checklisten,
+      Kennzahlen) werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.
+    </p>
+    <button type="button" class="btn btn-secondary text-danger" onclick="openModal('deleteAccountModal')">Konto löschen</button>
+  </div>
+</div>
+
+{# ---- Konto löschen modal ---- #}
+<div class="modal" id="deleteAccountModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('deleteAccountModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:8px;">Konto endgültig löschen?</h2>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5; margin-bottom:20px;">
+      Alle deine Daten werden unwiderruflich gelöscht. Gib zur Bestätigung
+      <strong>LÖSCHEN</strong> ein.
+    </p>
+    <form action="{{ url_for('settings.delete_account') }}" method="post" onsubmit="return document.getElementById('confirmDelete').value === 'LÖSCHEN';">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="field"><input type="text" id="confirmDelete" placeholder="LÖSCHEN" autocomplete="off"></div>
+      <button type="submit" class="btn btn-block" style="background:var(--danger-text); color:#fff; border-color:var(--danger-text);">Konto unwiderruflich löschen</button>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

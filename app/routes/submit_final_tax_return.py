@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from app.models import db, TaxYear
 from app.security import require_role, tax_year_for_request, parse_int
 from app.helpers import upload_path
+from app.audit import log_action
 from flask import Blueprint
 from datetime import datetime
 
@@ -73,7 +74,8 @@ def upload_final_tax_return():
         tax_year_record.final_submitted = datetime.utcnow()
         tax_year_record.status = "Completed"
         db.session.commit()
-        flash("Final tax return successfully submitted.", "success")
+        log_action('final.submit', target_type='tax_year', target_id=year, detail=f"user={user_id}")
+        flash("Finale Steuererklärung erfolgreich eingereicht.", "success")
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Final tax return DB update failed")
