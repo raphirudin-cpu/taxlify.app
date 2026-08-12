@@ -4,6 +4,9 @@ Werkzeug==3.1.3
 Jinja2==3.1.6
 itsdangerous==2.2.0
 
+# Production WSGI server
+gunicorn==23.0.0
+
 # Auth / forms / CSRF
 Flask-Login==0.6.3
 Flask-WTF==1.2.1
@@ -20,10 +23,10 @@ Flask-Mail==0.10.0
 celery==5.5.3
 redis==6.2.0
 
-# PDF generation
+# PDF generation (reportlab is pure-Python — no system libraries required).
+# weasyprint / xhtml2pdf were removed: nothing imported them. If you later add
+# HTML->PDF rendering, re-add weasyprint AND its native libs (pango/cairo/...).
 reportlab==4.4.3
-weasyprint==66.0
-xhtml2pdf==0.2.17
 
 # Config
 python-dotenv==1.1.1
