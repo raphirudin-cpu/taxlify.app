@@ -47,6 +47,7 @@ class TaxYear(db.Model):
     advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=True)
     assigned_on = db.Column(db.DateTime, nullable=True)  # when the client accepted the advisor's quote
     draft_rejection_comment = db.Column(db.Text, nullable=True)  # client's reason for rejecting a draft
+    last_reminded_at = db.Column(db.DateTime, nullable=True)  # advisor's last nudge to the client
     final_submitted = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     draft_tax_return_submitted = db.Column(db.Boolean, nullable=False, default=False)
@@ -175,6 +176,19 @@ class DocumentRequest(db.Model):
     uploaded_on = db.Column(db.DateTime)
     downloaded_on = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TaxYearExtension(db.Model):
+    """A recorded deadline extension (Fristverlängerung) for a tax year."""
+    __tablename__ = 'tax_year_extensions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tax_year_id = db.Column(db.Integer, db.ForeignKey('tax_years.id'), nullable=False)
+    previous_deadline = db.Column(db.Date, nullable=True)
+    new_deadline = db.Column(db.Date, nullable=False)
+    note = db.Column(db.String(255), nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
 
 class AuditLog(db.Model):
     """Activity trail of user actions (who did what, when). Best-effort — writing

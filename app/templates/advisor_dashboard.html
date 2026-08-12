@@ -12,6 +12,16 @@
 {%- else %}other{% endif %}
 {%- endmacro %}
 
+{% macro remind_button(ty, kind) -%}
+<form action="{{ url_for('advisor_dashboard.remind_client') }}" method="post" style="display:inline;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+  <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+  <input type="hidden" name="tax_year" value="{{ ty.year }}">
+  <input type="hidden" name="kind" value="{{ kind }}">
+  <button type="submit" class="btn btn-secondary btn-sm">Erinnern</button>
+</form>
+{%- endmacro %}
+
 {% block content %}
 {# ---- Derive KPI + filter counts (template-only, no route changes) ---- #}
 {% set counts = namespace(waiting=0, review=0, draft=0, final=0, blocked=0, offers=0, deadlines=0, lead_total=0, lead_n=0) %}
@@ -88,6 +98,8 @@
       </div>
       <div>
         {% if ty.deadline %}<span class="pill {{ urg }}">{{ ty.deadline|date_ch }}</span>{% else %}<span class="cell-muted">—</span>{% endif %}
+        <div><span class="text-action" style="font-size:12px;"
+             onclick="openExtend('{{ ty.user_id }}','{{ ty.year }}','{{ ty.deadline.isoformat() if ty.deadline else '' }}')">Frist verlängern</span></div>
       </div>
       <div>
         <div class="row" style="gap:8px; justify-content:flex-end;">
@@ -122,12 +134,14 @@
           </form>
         {% elif s == 'await_approve' %}
           <span class="state-label">Wartet auf Freigabe</span>
+          {{ remind_button(ty, 'draft') }}
         {% elif s == 'await_docs' %}
           <span class="state-label">Wartet auf Belege</span>
           <form action="{{ url_for('view_checklist.view_checklist', year=ty.year) }}" method="get" style="display:inline;">
             <input type="hidden" name="user_id" value="{{ ty.user_id }}">
             <button type="submit" class="btn btn-secondary btn-sm">Checkliste</button>
           </form>
+          {{ remind_button(ty, 'documents') }}
         {% else %}
           <span class="state-label">—</span>
         {% endif %}
@@ -235,6 +249,28 @@
     </form>
   </div>
 </div>
+
+{# ---- Frist verlängern modal ---- #}
+<div class="modal" id="extendModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('extendModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Frist verlängern</h2>
+    <form action="{{ url_for('advisor_dashboard.extend_deadline') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="user_id" id="extendUserId">
+      <input type="hidden" name="tax_year" id="extendYear">
+      <div class="field">
+        <label for="new_deadline">Neue Frist</label>
+        <input type="date" name="new_deadline" id="extendDeadline" required>
+      </div>
+      <div class="field">
+        <label for="extendNote">Notiz (optional)</label>
+        <input type="text" name="note" id="extendNote" maxlength="255" placeholder="z. B. Fristerstreckung beim Kanton beantragt">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Frist verlängern</button>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -257,6 +293,13 @@
     document.getElementById('finalUserId').value = uid;
     document.getElementById('finalYearId').value = year;
     openModal('finalModal');
+  }
+  function openExtend(uid, year, deadline){
+    document.getElementById('extendUserId').value = uid;
+    document.getElementById('extendYear').value = year;
+    document.getElementById('extendDeadline').value = deadline || '';
+    document.getElementById('extendNote').value = '';
+    openModal('extendModal');
   }
 
   // ---- Filter: pills (queue stage) + name search (queue + completed) ----

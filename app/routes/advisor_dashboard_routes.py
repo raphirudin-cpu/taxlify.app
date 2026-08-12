@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from app.models import db, TaxYear, User, Quote, Advisor, Feedback, UserStatistics, TeamMember
 from app.security import require_role, current_advisor, advisor_is_bound, parse_int
 from app.helpers import commit_or_rollback
-from datetime import date, datetime
+from app.audit import log_action
+from app.models import TaxYearExtension
+from datetime import date, datetime, timedelta
 
 advisor_dashboard_bp = Blueprint('advisor_dashboard', __name__)
 
@@ -180,4 +182,79 @@ def add_statistic():
         flash("Zahlen gespeichert.", "success")
     else:
         flash("Fehler beim Speichern der Zahlen.", "error")
+    return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+
+@advisor_dashboard_bp.route('/advisor/remind', methods=['POST'])
+@login_required
+@require_role('advisor', 'admin')
+def remind_client():
+    """Nudge a client about a pending action (documents / quote / draft)."""
+    user_id = parse_int(request.form.get('user_id'))
+    year = parse_int(request.form.get('tax_year'))
+    kind = request.form.get('kind')
+    if user_id is None or year is None or kind not in ('documents', 'quote', 'draft'):
+        flash("Fehlende oder ungültige Angaben.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    if not advisor_is_bound(user_id, year):
+        abort(403)
+
+    ty = TaxYear.query.filter_by(user_id=user_id, year=year).first()
+    if not ty:
+        flash("Steuerjahr nicht gefunden.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    if ty.last_reminded_at and (datetime.utcnow() - ty.last_reminded_at) < timedelta(hours=24):
+        flash("Diese Person wurde in den letzten 24 Stunden bereits erinnert.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+    client = User.query.get(user_id)
+    adv = current_advisor()
+    try:
+        from app.utils.email_tasks import send_reminder_email
+        send_reminder_email.delay(client.email, kind, year, adv.name if adv else None)
+    except Exception:
+        current_app.logger.exception("reminder enqueue failed")
+
+    ty.last_reminded_at = datetime.utcnow()
+    commit_or_rollback()
+    log_action('client.remind', target_type='tax_year', target_id=year, detail=kind)
+    flash("Erinnerung gesendet.", "success")
+    return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+
+@advisor_dashboard_bp.route('/advisor/extend_deadline', methods=['POST'])
+@login_required
+@require_role('advisor', 'admin')
+def extend_deadline():
+    """Record a deadline extension (Fristverlängerung) and update the deadline."""
+    user_id = parse_int(request.form.get('user_id'))
+    year = parse_int(request.form.get('tax_year'))
+    new_deadline_str = request.form.get('new_deadline')
+    note = (request.form.get('note') or '').strip() or None
+    if user_id is None or year is None or not new_deadline_str:
+        flash("Fehlende Angaben.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    if not advisor_is_bound(user_id, year):
+        abort(403)
+
+    ty = TaxYear.query.filter_by(user_id=user_id, year=year).first()
+    if not ty:
+        flash("Steuerjahr nicht gefunden.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    try:
+        new_deadline = datetime.strptime(new_deadline_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash("Ungültiges Datum.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+    db.session.add(TaxYearExtension(
+        tax_year_id=ty.id, previous_deadline=ty.deadline,
+        new_deadline=new_deadline, note=note, created_by=current_user.id,
+    ))
+    ty.deadline = new_deadline
+    if commit_or_rollback():
+        log_action('deadline.extend', target_type='tax_year', target_id=year, detail=new_deadline_str)
+        flash("Frist verlängert.", "success")
+    else:
+        flash("Frist konnte nicht verlängert werden.", "error")
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))
