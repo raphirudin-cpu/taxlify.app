@@ -23,7 +23,7 @@ def upload_documents(year):
     # Query for the tax year using the given year and user_id
     tax_year = TaxYear.query.filter_by(year=year, user_id=user_id).first()
     if not tax_year:
-        flash("Tax year not found.", "error")
+        flash("Steuerjahr nicht gefunden.", "error")
         return render_template('upload_documents.html', tax_year=year, required_documents=[])
     
     tax_year_id = tax_year.id

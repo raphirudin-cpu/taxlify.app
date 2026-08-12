@@ -23,7 +23,7 @@ def upload_additional_documents(year):
     # Retrieve the TaxYear record for the given year and user.
     tax_year = TaxYear.query.filter_by(year=year, user_id=user_id).first()
     if not tax_year:
-        flash("Tax year not found.", "error")
+        flash("Steuerjahr nicht gefunden.", "error")
         return render_template('upload_additional_documents.html', tax_year=year, additional_documents=[])
     
     tax_year_id = tax_year.id
@@ -45,7 +45,7 @@ def upload_additional_documents(year):
     
     # POST: Process the file upload for a specific additional document request.
     if 'file' not in request.files:
-        flash("No file part in the request.", "error")
+        flash("Keine Datei in der Anfrage.", "error")
         return redirect(url_for('upload_additional_documents.upload_additional_documents', year=year))
     
     file = request.files['file']
@@ -56,7 +56,7 @@ def upload_additional_documents(year):
         document_id = None
 
     if file.filename == '':
-        flash("No selected file.", "error")
+        flash("Keine Datei ausgewählt.", "error")
         return redirect(url_for('upload_additional_documents.upload_additional_documents', year=year))
     
     if file and allowed_file(file.filename):
@@ -76,13 +76,13 @@ def upload_additional_documents(year):
             tax_year.status = "Additional documents uploaded"
             tax_year.additional_documents_uploaded = 1
             if commit_or_rollback():
-                flash("File uploaded successfully.", "success")
+                flash("Datei hochgeladen.", "success")
             else:
-                flash("Error saving the uploaded file.", "error")
+                flash("Fehler beim Speichern der Datei.", "error")
             return redirect(url_for('upload_additional_documents.upload_additional_documents', year=year))
         else:
-            flash("Document request not found.", "error")
+            flash("Dokumentenanfrage nicht gefunden.", "error")
             return redirect(url_for('upload_additional_documents.upload_additional_documents', year=year))
     else:
-        flash("Invalid file type.", "error")
+        flash("Ungültiger Dateityp.", "error")
         return redirect(url_for('upload_additional_documents.upload_additional_documents', year=year))

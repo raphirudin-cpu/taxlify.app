@@ -18,24 +18,24 @@ def documents_action():
 
     # Check that required form fields were provided.
     if customer_id_int is None or tax_year_int is None or not action:
-        flash("Missing or invalid data.", "error")
+        flash("Fehlende oder ungültige Angaben.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     try:
         # Ownership: acting advisor must be bound to this client's tax year.
         tax_year_record = tax_year_for_request(tax_year_int, customer_id=customer_id_int)
         if not tax_year_record:
-            raise Exception("Tax year record not found or access denied.")
+            raise Exception("Steuerjahr nicht gefunden oder Zugriff verweigert.")
 
         # Update the documents_approved field and tax year status based on the action.
         if action == 'accept':
             tax_year_record.documents_approved = 1
             tax_year_record.status = 'Documents approved'
-            flash("Documents accepted successfully.", "success")
+            flash("Dokumente freigegeben.", "success")
         elif action == 'reject':
             tax_year_record.documents_approved = 0
             tax_year_record.status = 'Documents rejected'
-            flash("Documents rejected successfully.", "success")
+            flash("Dokumente abgelehnt.", "success")
         else:
             raise Exception("Invalid action.")
         
@@ -44,7 +44,7 @@ def documents_action():
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception("documents_action DB error")
-        flash("Error updating documents.", "error")
+        flash("Fehler beim Aktualisieren der Dokumente.", "error")
     except Exception as e:
         db.session.rollback()
         current_app.logger.warning("documents_action failed: %s", e)

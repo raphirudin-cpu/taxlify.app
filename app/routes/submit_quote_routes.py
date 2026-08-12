@@ -27,7 +27,7 @@ def submit_quote():
 
     advisor_record = current_advisor()
     if not advisor_record:
-        flash("Advisor record not found.", "error")
+        flash("Treuhänder-Datensatz nicht gefunden.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     advisor_id = advisor_record.id
 
@@ -44,21 +44,21 @@ def submit_quote():
             break
 
     if not available_for_year:
-        flash("You have no available slots left for the selected tax year.", "error")
+        flash("Für dieses Steuerjahr sind keine Slots mehr verfügbar.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     file_path = None
     file = request.files.get('file')
     if file and file.filename:
         if not allowed_file(file.filename):
-            flash("Sorry, only PDF, DOC & DOCX files are allowed.", "error")
+            flash("Nur PDF-, DOC- und DOCX-Dateien sind erlaubt.", "error")
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
         file.seek(0, os.SEEK_END)
         file_length = file.tell()
         file.seek(0)
         if file_length > MAX_FILE_SIZE:
-            flash("Sorry, your file is too large.", "error")
+            flash("Die Datei ist zu gross.", "error")
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
         upload_dir = upload_path(user_id, tax_year, 'Quotes')
@@ -69,21 +69,21 @@ def submit_quote():
             file.save(target_file)
             file_path = target_file
         except Exception as e:
-            flash("Sorry, there was an error uploading your file.", "error")
+            flash("Fehler beim Hochladen der Datei.", "error")
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     try:
         quote_amount = float(quote_amount)
         if quote_amount < 0:
-            flash("Invalid quote amount.", "error")
+            flash("Ungültiger Offertenbetrag.", "error")
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     except ValueError:
-        flash("Invalid quote amount.", "error")
+        flash("Ungültiger Offertenbetrag.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     quote = Quote.query.filter_by(id=quote_id, advisor_id=advisor_id).first()
     if not quote:
-        flash("Quote not found or unauthorized.", "error")
+        flash("Offerte nicht gefunden oder keine Berechtigung.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     quote.quote_amount = quote_amount
@@ -98,8 +98,8 @@ def submit_quote():
         tax_year_record.status = "Review Quote"
 
     if commit_or_rollback():
-        flash("Quote submitted successfully.", "success")
+        flash("Offerte gesendet.", "success")
     else:
-        flash("Error submitting quote.", "error")
+        flash("Fehler beim Senden der Offerte.", "error")
 
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))

@@ -175,6 +175,7 @@ def dashboard():
             "advisor_city": adv.city if adv else None,
             "awaiting_decision": t.status == "Review Quote",
             "pending_quote": bool(quote and quote.quote_status == "Pending"),
+            "draft_pending": bool(t.draft_tax_return_submitted and not t.draft_tax_return_approved),
             "quote_amount": quote.quote_amount if quote else None,
             "quote_advisor_id": quote.advisor_id if quote else None,
             "rail": _rail(t),
@@ -282,7 +283,7 @@ def download_quote_file(quote_id):
 def download_draft_tax_return(user_id, year):
     record = tax_year_for_request(year, customer_id=user_id)
     if not record:
-        flash("Tax year record not found or access denied.", "error")
+        flash("Steuerjahr nicht gefunden oder Zugriff verweigert.", "error")
         return redirect(url_for('dashboard.dashboard'))
     if not record.draft_file_path:
         flash(f"Draft tax return file not found for tax year {year}.", "error")
@@ -294,7 +295,7 @@ def download_draft_tax_return(user_id, year):
 def download_final_tax_return(user_id, year):
     record = tax_year_for_request(year, customer_id=user_id)
     if not record or not record.final_file_path:
-        flash("Final tax return file not found or access denied.", "error")
+        flash("Finale Steuererklärung nicht gefunden oder Zugriff verweigert.", "error")
         return redirect(url_for('dashboard.dashboard'))
     return send_stored_file(record.final_file_path, mimetype='application/pdf')
 
@@ -304,13 +305,13 @@ def withdraw_quote(tax_year_id):
     # Retrieve the tax year record using the provided tax_year_id
     tax_year_record = TaxYear.query.get(tax_year_id)
     if not tax_year_record:
-        flash("Tax year record not found.", "error")
+        flash("Steuerjahr nicht gefunden.", "error")
         return jsonify({"error": "Tax year record not found"}), 404
 
     # Find the corresponding quote using the tax year (assuming 'tax_year' in Quote corresponds to TaxYear.year)
     quote = Quote.query.filter_by(user_id=current_user.id, tax_year=tax_year_record.year).first()
     if not quote or quote.quote_status != "Pending":
-        flash("No pending quote found for this tax year.", "error")
+        flash("Keine offene Anfrage für dieses Steuerjahr.", "error")
         return jsonify({"error": "No pending quote found for this tax year"}), 404
 
     # Update the quote status to "Rejected" and the tax year status to "Quote withdrawn"

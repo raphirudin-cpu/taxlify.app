@@ -14,45 +14,44 @@ def draft_tax_return_action():
     action = request.form.get('action')
 
     if not (tax_year_value and action):
-        flash("Missing required data.", "error")
+        flash("Fehlende Angaben.", "error")
         return redirect(url_for('dashboard.dashboard'))
+
+    reason = (request.form.get('comment') or '').strip() or None
 
     try:
         # Retrieve the TaxYear record for the current user and specified tax year.
         tax_year_record = TaxYear.query.filter_by(user_id=user_id, year=tax_year_value).first()
         if not tax_year_record:
-            raise Exception("Tax year record not found.")
+            raise Exception("Steuerjahr nicht gefunden.")
 
         if action == 'accept':
-            # Accept the draft tax return:
-            # Mark as submitted and approved, update status accordingly.
             tax_year_record.draft_tax_return_submitted = 1
             tax_year_record.draft_tax_return_approved = 1
+            tax_year_record.draft_rejection_comment = None
             tax_year_record.status = 'Draft tax return approved'
-            flash("Draft tax return accepted successfully.", "success")
+            flash("Entwurf angenommen.", "success")
         elif action == 'reject':
-            # Reject the draft tax return:
-            # Reset submission and approval flags, update status.
             tax_year_record.draft_tax_return_submitted = 0
             tax_year_record.draft_tax_return_approved = 0
+            tax_year_record.draft_rejection_comment = reason   # why the client rejected the draft
             tax_year_record.status = 'Draft tax return rejected'
-            flash("Draft tax return rejected successfully.", "success")
+            flash("Entwurf abgelehnt.", "success")
         elif action == 'draft':
-            # Mark the draft tax return as submitted but not yet approved.
             tax_year_record.draft_tax_return_submitted = 1
             tax_year_record.draft_tax_return_approved = 0
             tax_year_record.status = 'Draft tax return submitted'
-            flash("Draft tax return submitted successfully.", "success")
+            flash("Entwurf eingereicht.", "success")
         else:
             raise Exception("Invalid action.")
 
         db.session.commit()
-        log_action('draft.' + action, target_type='tax_year', target_id=tax_year_value)
-    except SQLAlchemyError as e:
+        log_action('draft.' + action, target_type='tax_year', target_id=tax_year_value, detail=reason)
+    except SQLAlchemyError:
         db.session.rollback()
-        flash("Error updating draft tax return.", "error")
+        flash("Fehler beim Aktualisieren des Entwurfs.", "error")
     except Exception as e:
         db.session.rollback()
-        flash("Error.", "error")
+        flash(str(e) if str(e) else "Fehler.", "error")
 
     return redirect(url_for('dashboard.dashboard'))

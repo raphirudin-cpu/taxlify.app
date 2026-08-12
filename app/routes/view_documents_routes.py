@@ -25,13 +25,13 @@ def view_documents(year):
         raw = request.form.get('user_id') if request.method == 'POST' else request.args.get('user_id')
         customer_id = parse_int(raw)
         if customer_id is None:
-            flash("Customer ID is required.", "error")
+            flash("Kunden-ID erforderlich.", "error")
             return redirect(url_for('dashboard.dashboard'))
 
     # Enforces ownership (user) / advisor-client binding / admin access.
     tax_year = tax_year_for_request(year, customer_id=customer_id)
     if not tax_year:
-        flash("Invalid tax year or access denied.", "error")
+        flash("Ungültiges Steuerjahr oder Zugriff verweigert.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     uploaded_documents = RequiredDocument.query.filter_by(
@@ -50,7 +50,7 @@ def view_documents(year):
         if document:
             file_path = document.file_path
             if not os.path.exists(file_path):
-                flash("Document file not found.", "error")
+                flash("Datei nicht gefunden.", "error")
                 return redirect(url_for('documents.view_documents', year=tax_year.year, user_id=tax_year.user_id))
             document.downloaded_on = datetime.utcnow()
             db.session.commit()
@@ -62,7 +62,7 @@ def view_documents(year):
                 mimetype="application/pdf"
             )
         else:
-            flash("Document not found.", "error")
+            flash("Dokument nicht gefunden.", "error")
             return redirect(url_for('documents.view_documents', year=tax_year.year, user_id=tax_year.user_id))
 
     # === Updated "Download All" section: in-memory ZIP ===
@@ -90,7 +90,7 @@ def view_documents(year):
                         flash(f"File not found: {file_path}", "error")
         except Exception:
             current_app.logger.exception("ZIP creation failed")
-            flash("Could not create the ZIP file.", "error")
+            flash("ZIP-Datei konnte nicht erstellt werden.", "error")
             return redirect(url_for('documents.view_documents', year=tax_year.year, user_id=tax_year.user_id))
 
         zip_buffer.seek(0)

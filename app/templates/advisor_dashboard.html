@@ -82,7 +82,10 @@
          data-blocked="{{ '1' if is_blocked else '0' }}">
       <div class="cell-strong">{{ ty.user_surname }} {{ ty.user_name }}</div>
       <div class="tnum">{{ ty.year }}</div>
-      <div class="cell-muted">{{ ty.status|status_de }}</div>
+      <div class="cell-muted">
+        {{ ty.status|status_de }}
+        {% if ty.draft_rejection_comment %}<div class="text-danger" style="font-size:12px; margin-top:2px;" title="{{ ty.draft_rejection_comment }}">Abgelehnt: {{ ty.draft_rejection_comment|truncate(60) }}</div>{% endif %}
+      </div>
       <div>
         {% if ty.deadline %}<span class="pill {{ urg }}">{{ ty.deadline|date_ch }}</span>{% else %}<span class="cell-muted">—</span>{% endif %}
       </div>

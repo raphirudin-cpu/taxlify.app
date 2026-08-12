@@ -21,7 +21,7 @@ def advisor_details():
     # Fetch the advisor using the Advisor model
     advisor = Advisor.query.filter_by(id=advisor_id).first()
     if not advisor:
-        return "Advisor not found.", 404
+        return "Treuhänder nicht gefunden.", 404
 
     # Build the logo URL similar to the advisors page logic
     if advisor.logo:

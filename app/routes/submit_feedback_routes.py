@@ -30,10 +30,10 @@ def submit_feedback():
     try:
         db.session.add(feedback)
         db.session.commit()
-        flash("Feedback submitted successfully.", "success")
+        flash("Bewertung gesendet.", "success")
     except Exception as e:
         db.session.rollback()
-        flash("Error submitting feedback.", "error")
+        flash("Fehler beim Senden der Bewertung.", "error")
     
     # Redirect to the dashboard
     return redirect(url_for('dashboard.dashboard'))

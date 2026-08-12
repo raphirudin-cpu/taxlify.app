@@ -22,7 +22,7 @@ def request_more_documents(year):
     if current_user.role in ('advisor', 'admin'):
         customer_id = session.get('customer_id')
         if not customer_id:
-            flash("Customer ID is required.", "error")
+            flash("Kunden-ID erforderlich.", "error")
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     else:
         customer_id = current_user.id
@@ -37,7 +37,7 @@ def request_more_documents(year):
     # Retrieve the TaxYear record, enforcing advisor-client binding / ownership.
     tax_year = tax_year_for_request(year, customer_id=customer_id)
     if not tax_year:
-        flash("Tax year record not found or access denied.", "error")
+        flash("Steuerjahr nicht gefunden oder Zugriff verweigert.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     
     # Save each non-empty document request.
@@ -56,9 +56,9 @@ def request_more_documents(year):
     tax_year.status = 'Additional documents requested'
 
     if commit_or_rollback():
-        flash("Document requests saved successfully.", "success")
+        flash("Dokumentenanfragen gespeichert.", "success")
     else:
-        flash("Error saving document requests.", "error")
+        flash("Fehler beim Speichern der Anfragen.", "error")
     # Optionally, clear the customer_id from the session after processing.
     session.pop('customer_id', None)
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))

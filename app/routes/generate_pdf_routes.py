@@ -15,12 +15,12 @@ def generate_pdf(user_id, tax_year_id):
     # Retrieve tax year and user
     tax_year = TaxYear.query.filter_by(id=tax_year_id, user_id=user_id).first()
     if not tax_year:
-        flash("Invalid tax year.", "error")
+        flash("Ungültiges Steuerjahr.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     user = User.query.get(user_id)
     if not user:
-        flash("User not found.", "error")
+        flash("Benutzer nicht gefunden.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     # Authorization: the client themselves, an admin, or the bound advisor.
@@ -30,7 +30,7 @@ def generate_pdf(user_id, tax_year_id):
         or (current_user.role == 'advisor' and advisor_is_bound(user_id, tax_year.year))
     )
     if not authorized:
-        flash("Unauthorized access.", "error")
+        flash("Zugriff verweigert.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     # Get checklist answers
@@ -66,7 +66,7 @@ def generate_pdf(user_id, tax_year_id):
         buffer.seek(0)
     except Exception as e:
         print(f"❌ Error generating PDF: {e}")
-        flash("Error generating the PDF.", "error")
+        flash("Fehler beim Erstellen des PDF.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     # Download filename

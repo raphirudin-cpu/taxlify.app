@@ -50,19 +50,21 @@
       <div style="display:flex; align-items:center; gap:12px;">
         <span class="pill {{ c.urgency }}">Frist {{ c.deadline|date_ch }}</span>
         {% if c.awaiting_decision %}
-          <form method="post" action="{{ url_for('quote_action.quote_action') }}" style="display:inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="tax_year" value="{{ c.year }}">
-            <input type="hidden" name="advisor_id" value="{{ c.quote_advisor_id }}">
-            <input type="hidden" name="action" value="reject">
-            <button class="btn btn-secondary btn-sm" type="submit">Ablehnen</button>
-          </form>
+          <button class="btn btn-secondary btn-sm" onclick="openRejectQuote('{{ c.year }}','{{ c.quote_advisor_id }}')">Ablehnen</button>
           <form method="post" action="{{ url_for('quote_action.quote_action') }}" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="tax_year" value="{{ c.year }}">
             <input type="hidden" name="advisor_id" value="{{ c.quote_advisor_id }}">
             <input type="hidden" name="action" value="accept">
             <button class="btn btn-primary btn-sm" type="submit">Offerte annehmen</button>
+          </form>
+        {% elif c.draft_pending %}
+          <button class="btn btn-secondary btn-sm" onclick="openRejectDraft('{{ c.year }}')">Entwurf ablehnen</button>
+          <form method="post" action="{{ url_for('draft_tax_return_action.draft_tax_return_action') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="tax_year" value="{{ c.year }}">
+            <input type="hidden" name="action" value="accept">
+            <button class="btn btn-primary btn-sm" type="submit">Entwurf annehmen</button>
           </form>
         {% elif c.pending_quote %}
           <button class="btn btn-secondary btn-sm" onclick="withdrawQuote('{{ c.id }}')">Anfrage zurückziehen</button>
@@ -149,6 +151,43 @@
     </form>
   </div>
 </div>
+
+{# ---- Offerte ablehnen modal ---- #}
+<div class="modal" id="rejectQuoteModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('rejectQuoteModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Offerte ablehnen</h2>
+    <form method="post" action="{{ url_for('quote_action.quote_action') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tax_year" id="rq_year">
+      <input type="hidden" name="advisor_id" id="rq_advisor">
+      <input type="hidden" name="action" value="reject">
+      <div class="field">
+        <label for="rq_comment">Grund (optional)</label>
+        <textarea name="comment" id="rq_comment" placeholder="z. B. zu teuer, anderer Treuhänder gewählt"></textarea>
+      </div>
+      <button type="submit" class="btn btn-block" style="background:var(--danger-text); color:#fff; border-color:var(--danger-text);">Offerte ablehnen</button>
+    </form>
+  </div>
+</div>
+
+{# ---- Entwurf ablehnen modal ---- #}
+<div class="modal" id="rejectDraftModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('rejectDraftModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Entwurf ablehnen</h2>
+    <form method="post" action="{{ url_for('draft_tax_return_action.draft_tax_return_action') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="tax_year" id="rd_year">
+      <input type="hidden" name="action" value="reject">
+      <div class="field">
+        <label for="rd_comment">Was sollte angepasst werden?</label>
+        <textarea name="comment" id="rd_comment" placeholder="Beschreibe kurz, was nicht stimmt" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-block" style="background:var(--danger-text); color:#fff; border-color:var(--danger-text);">Entwurf ablehnen</button>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -161,6 +200,18 @@
   document.addEventListener('keydown', function(e){
     if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(function(m){ m.classList.remove('open'); });
   });
+
+  function openRejectQuote(year, advisorId){
+    document.getElementById('rq_year').value = year;
+    document.getElementById('rq_advisor').value = advisorId;
+    document.getElementById('rq_comment').value = '';
+    openModal('rejectQuoteModal');
+  }
+  function openRejectDraft(year){
+    document.getElementById('rd_year').value = year;
+    document.getElementById('rd_comment').value = '';
+    openModal('rejectDraftModal');
+  }
 
   function openFeedback(year, advisorId, advisorName){
     document.getElementById('fbYear').value = year;

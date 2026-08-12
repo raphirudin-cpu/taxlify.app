@@ -57,6 +57,7 @@ def advisor_dashboard():
             'additional_documents_request': ty.additional_documents_request,
             'additional_documents_uploaded': ty.additional_documents_uploaded,
             'documents_approved': ty.documents_approved,
+            'draft_rejection_comment': ty.draft_rejection_comment,
             'user_name': user.lastname,
             'user_surname': user.firstname,
             'final_submitted': ty.final_submitted,

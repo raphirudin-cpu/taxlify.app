@@ -70,6 +70,8 @@ def admin_clients():
         else:
             stat_income = stat_assets = stat_paid_taxes = None
 
+        assigned_on = max((ty.assigned_on for ty in tys if ty.assigned_on), default=None)
+
         clients.append({
             'id':              uid,
             'name':            f"{user.firstname} {user.lastname}",
@@ -79,10 +81,15 @@ def admin_clients():
             'returns_count':   returns_count,
             'open_tasks':      open_tasks,
             'next_deadline':   next_deadline,
+            'assigned_on':     assigned_on,
             'stat_income':     stat_income,
             'stat_assets':     stat_assets,
             'stat_paid_taxes': stat_paid_taxes,
         })
+
+    # Newest clients first (most recent mandate assignment); unassigned last.
+    from datetime import datetime as _dt
+    clients.sort(key=lambda c: c['assigned_on'] or _dt.min, reverse=True)
 
     return render_template('admin_clients.html', clients=clients)
 

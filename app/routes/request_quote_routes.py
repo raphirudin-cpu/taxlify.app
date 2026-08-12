@@ -20,13 +20,13 @@ def request_quote():
     try:
         advisor_id = int(advisor_id)
     except (ValueError, TypeError):
-        flash("Invalid advisor id.", "error")
+        flash("Ungültige Treuhänder-ID.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     # Check if the advisor exists in the Advisor table
     advisor = Advisor.query.get(advisor_id)
     if not advisor:
-        flash("Advisor not found.", "error")
+        flash("Treuhänder nicht gefunden.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     # Check if a quote for this year already exists regardless of the advisor
@@ -45,10 +45,10 @@ def request_quote():
 
             try:
                 db.session.commit()
-                flash("Quote updated and re-requested successfully.", "success")
+                flash("Offerte aktualisiert und erneut angefragt.", "success")
             except Exception as e:
                 db.session.rollback()
-                flash("Error updating and re-requesting quote.", "error")
+                flash("Fehler beim erneuten Anfragen der Offerte.", "error")
         else:
             flash(f"A quote for the year {tax_year} already exists with a different status.", "error")
             return redirect(url_for('dashboard.dashboard'))
@@ -74,9 +74,9 @@ def request_quote():
 
         try:
             db.session.commit()
-            flash("Quote requested successfully.", "success")
+            flash("Offerte angefragt.", "success")
         except Exception as e:
             db.session.rollback()
-            flash("Error requesting quote.", "error")
+            flash("Fehler beim Anfragen der Offerte.", "error")
 
     return redirect(url_for('dashboard.dashboard'))

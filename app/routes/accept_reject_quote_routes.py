@@ -16,52 +16,50 @@ def quote_action():
     action = request.form.get('action')
 
     if not (tax_year and advisor_id and action):
-        flash("Missing required data.", "error")
+        flash("Fehlende Angaben.", "error")
         return redirect(url_for('dashboard.dashboard'))
+
+    reason = (request.form.get('comment') or '').strip() or None
 
     try:
         if action == 'accept':
-            # Retrieve the Quote record for acceptance
             quote = Quote.query.filter_by(user_id=user_id, tax_year=tax_year).first()
             if not quote:
                 raise Exception("Quote not found for acceptance.")
-            # Update quote status
             quote.quote_status = 'Accepted'
             quote.accepted_on = datetime.utcnow()
-            
-            # Update the TaxYear record: assign the advisor and set the status
+
             tax_year_record = TaxYear.query.filter_by(user_id=user_id, year=tax_year).first()
             if not tax_year_record:
-                raise Exception("Tax year record not found.")
+                raise Exception("Steuerjahr nicht gefunden.")
             tax_year_record.advisor_id = advisor_id
+            tax_year_record.assigned_on = datetime.utcnow()   # for "newest clients" at advisor side
             tax_year_record.status = 'Quote accepted'
-            
-            flash("Quote accepted successfully.", "success")
+
+            flash("Offerte angenommen.", "success")
         elif action == 'reject':
-            # Retrieve the Quote record for rejection
             quote = Quote.query.filter_by(user_id=user_id, tax_year=tax_year).first()
             if not quote:
                 raise Exception("Quote not found for rejection.")
-            # Update quote status
             quote.quote_status = 'Rejected'
-            
-            # Update the TaxYear record status
+            quote.rejection_reason = reason   # e.g. "zu teuer"
+
             tax_year_record = TaxYear.query.filter_by(user_id=user_id, year=tax_year).first()
             if not tax_year_record:
-                raise Exception("Tax year record not found.")
+                raise Exception("Steuerjahr nicht gefunden.")
             tax_year_record.status = 'Quote rejected'
-            
-            flash("Quote rejected successfully.", "success")
+
+            flash("Offerte abgelehnt.", "success")
         else:
             raise Exception("Invalid action.")
         # Commit once after all changes
         db.session.commit()
-        log_action('quote.' + action, target_type='tax_year', target_id=tax_year)
-    except SQLAlchemyError as e:
+        log_action('quote.' + action, target_type='tax_year', target_id=tax_year, detail=reason)
+    except SQLAlchemyError:
         db.session.rollback()
-        flash("Error updating quote.", "error")
+        flash("Fehler beim Aktualisieren der Offerte.", "error")
     except Exception as e:
         db.session.rollback()
-        flash("Error.", "error")
+        flash(str(e) if str(e) else "Fehler.", "error")
 
     return redirect(url_for('dashboard.dashboard'))

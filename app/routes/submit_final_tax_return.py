@@ -24,7 +24,7 @@ def _allowed(filename):
 @require_role('advisor', 'admin')
 def upload_final_tax_return():
     if 'final_tax_return_file' not in request.files:
-        flash("No file or form data received.", "error")
+        flash("Keine Datei oder Formulardaten empfangen.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     user_id = parse_int(request.form.get('user_id'))
@@ -32,28 +32,28 @@ def upload_final_tax_return():
     file = request.files['final_tax_return_file']
 
     if user_id is None or year is None:
-        flash("Invalid data provided.", "error")
+        flash("Ungültige Angaben.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     # Ownership: the acting advisor must be bound to this client's tax year.
     tax_year_record = tax_year_for_request(year, customer_id=user_id)
     if not tax_year_record:
-        flash("Tax year not found or access denied.", "error")
+        flash("Steuerjahr nicht gefunden oder Zugriff verweigert.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     if not file.filename or not _allowed(file.filename):
-        flash("Unsupported or missing file.", "error")
+        flash("Nicht unterstützte oder fehlende Datei.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     file.seek(0, os.SEEK_END)
     if file.tell() > MAX_FILE_SIZE:
         file.seek(0)
-        flash("File size is too large.", "error")
+        flash("Datei ist zu gross.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     file.seek(0)
 
     if tax_year_record.final_tax_return_submitted == 1:
-        flash("Final tax return has already been submitted.", "error")
+        flash("Finale Steuererklärung wurde bereits eingereicht.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     filename = secure_filename(file.filename)
@@ -65,7 +65,7 @@ def upload_final_tax_return():
         file.save(file_path)
     except Exception:
         current_app.logger.exception("Final tax return upload failed")
-        flash("There was an error uploading the final tax return file.", "error")
+        flash("Fehler beim Hochladen der finalen Steuererklärung.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     try:
@@ -79,6 +79,6 @@ def upload_final_tax_return():
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Final tax return DB update failed")
-        flash("Error updating record.", "error")
+        flash("Fehler beim Speichern.", "error")
 
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))

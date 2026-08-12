@@ -14,12 +14,12 @@ def view_checklist(year):
     if current_user.role in ('advisor', 'admin'):
         customer_id = parse_int(request.args.get('user_id'))
         if customer_id is None:
-            flash("Customer ID is required.", "error")
+            flash("Kunden-ID erforderlich.", "error")
             return redirect(url_for('dashboard.dashboard'))
 
     tax_year = tax_year_for_request(year, customer_id=customer_id)
     if not tax_year:
-        flash("Invalid tax year or access denied.", "error")
+        flash("Ungültiges Steuerjahr oder Zugriff verweigert.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
     answers = ChecklistAnswer.query.filter_by(tax_year_id=tax_year.id, user_id=tax_year.user_id).all()

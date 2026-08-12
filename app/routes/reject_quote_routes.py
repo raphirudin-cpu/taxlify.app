@@ -13,13 +13,13 @@ def reject_quote():
     # Get the quote id from the form
     quote_id = request.form.get('id')
     if not quote_id:
-        flash("No quote id provided.", "error")
+        flash("Keine Offerten-ID angegeben.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     # Retrieve the advisor record for the current user
     advisor_record = current_advisor()
     if not advisor_record:
-        flash("Advisor record not found.", "error")
+        flash("Treuhänder-Datensatz nicht gefunden.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     
     # Use the advisor's id from the Advisor table
@@ -28,12 +28,12 @@ def reject_quote():
     # Update the quote's status to an allowed value ('Rejected')
     quote = Quote.query.filter_by(id=quote_id, advisor_id=advisor_id).first()
     if not quote:
-        flash("Quote not found or you do not have permission to reject it.", "error")
+        flash("Offerte nicht gefunden oder keine Berechtigung.", "error")
     else:
         quote.quote_status = 'Rejected'
         if commit_or_rollback():
-            flash("Quote request has been successfully rejected.", "success")
+            flash("Anfrage abgelehnt.", "success")
         else:
-            flash("Error rejecting the quote request.", "error")
+            flash("Fehler beim Ablehnen der Anfrage.", "error")
 
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))

@@ -45,6 +45,8 @@ class TaxYear(db.Model):
     checklist_completed = db.Column(db.Boolean, default=False)
     uploaded_documents = db.Column(db.Boolean, default=False)
     advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=True)
+    assigned_on = db.Column(db.DateTime, nullable=True)  # when the client accepted the advisor's quote
+    draft_rejection_comment = db.Column(db.Text, nullable=True)  # client's reason for rejecting a draft
     final_submitted = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     draft_tax_return_submitted = db.Column(db.Boolean, nullable=False, default=False)
@@ -70,6 +72,7 @@ class Quote(db.Model):
     )
     quote_amount = db.Column(db.Numeric(10, 2), nullable=True)
     comment = db.Column(db.Text, nullable=True)
+    rejection_reason = db.Column(db.Text, nullable=True)  # client's reason for declining the offer
     file_path = db.Column(db.String(255), nullable=True)
     final_submitted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
