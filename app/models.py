@@ -44,7 +44,7 @@ class TaxYear(db.Model):
     deadline = db.Column(db.Date, nullable=False)
     checklist_completed = db.Column(db.Boolean, default=False)
     uploaded_documents = db.Column(db.Boolean, default=False)
-    advisor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=True)
     final_submitted = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     draft_tax_return_submitted = db.Column(db.Boolean, nullable=False, default=False)
@@ -63,7 +63,7 @@ class Quote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     tax_year = db.Column(db.Integer, nullable=False)
-    advisor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
     quote_status = db.Column(
         db.Enum('Pending', 'In Review', 'Accepted', 'Rejected', 'Draft Tax Return in Review', 'Tax Return Approved', name='quote_status'),
         default='Pending'
@@ -83,7 +83,7 @@ class Feedback(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     tax_year = db.Column(db.Integer, nullable=False)
-    advisor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)  # Between 1 and 5
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -156,7 +156,7 @@ class TeamMember(db.Model):
     __tablename__ = 'team_members'
     
     id = db.Column(db.Integer, primary_key=True)
-    advisor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
     email = db.Column(db.String(120), nullable=False)
 
     def __repr__(self):
