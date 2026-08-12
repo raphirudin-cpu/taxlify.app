@@ -271,6 +271,24 @@ input::placeholder, textarea::placeholder { color: var(--muted-light); }
 .pill.warning { background: var(--warning-chip-bg); color: var(--warning-chip-fg); }
 .pill.danger  { background: var(--danger-chip-bg);  color: var(--danger-chip-fg); }
 
+/* Deadline pill with extension history */
+.pill .ext-badge {
+  margin-left: 6px; padding: 0 6px; height: 16px; display: inline-flex; align-items: center;
+  border-radius: 999px; font-size: 10px; font-weight: 600;
+  background: var(--ink); color: var(--surface);
+}
+.pill.has-tip { position: relative; cursor: help; outline: none; }
+.pill.has-tip .tip {
+  position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 30;
+  min-width: 220px; max-width: 320px; padding: 10px 12px;
+  background: var(--ink); color: var(--surface);
+  border-radius: 8px; font-size: 12px; font-weight: 400; line-height: 1.5;
+  white-space: normal; opacity: 0; visibility: hidden; transition: opacity .12s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+.pill.has-tip:hover .tip, .pill.has-tip:focus .tip { opacity: 1; visibility: visible; }
+.pill.has-tip .tip strong { font-weight: 600; }
+
 /* ---------- Progress rail (5 steps) ---------- */
 .rail { display: flex; gap: 0; }
 .rail .step { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-right: 8px; }

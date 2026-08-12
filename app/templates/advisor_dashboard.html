@@ -97,7 +97,18 @@
         {% if ty.draft_rejection_comment %}<div class="text-danger" style="font-size:12px; margin-top:2px;" title="{{ ty.draft_rejection_comment }}">Abgelehnt: {{ ty.draft_rejection_comment|truncate(60) }}</div>{% endif %}
       </div>
       <div>
-        {% if ty.deadline %}<span class="pill {{ urg }}">{{ ty.deadline|date_ch }}</span>{% else %}<span class="cell-muted">—</span>{% endif %}
+        {% if ty.deadline %}
+          {% if ty.extensions %}
+            <span class="pill {{ urg }} has-tip" tabindex="0">{{ ty.deadline|date_ch }} <span class="ext-badge">+{{ ty.extensions|length }}</span>
+              <span class="tip">
+                <strong>Ursprüngliche Frist:</strong> {{ ty.original_deadline|date_ch }}<br>
+                {% for e in ty.extensions %}{{ e.previous_deadline|date_ch }} → {{ e.new_deadline|date_ch }}{% if e.note %} · {{ e.note }}{% endif %}<br>{% endfor %}
+              </span>
+            </span>
+          {% else %}
+            <span class="pill {{ urg }}">{{ ty.deadline|date_ch }}</span>
+          {% endif %}
+        {% else %}<span class="cell-muted">—</span>{% endif %}
         <div><span class="text-action" style="font-size:12px;"
              onclick="openExtend('{{ ty.user_id }}','{{ ty.year }}','{{ ty.deadline.isoformat() if ty.deadline else '' }}')">Frist verlängern</span></div>
       </div>

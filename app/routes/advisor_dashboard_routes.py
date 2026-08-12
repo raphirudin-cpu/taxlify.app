@@ -41,14 +41,31 @@ def advisor_dashboard():
             .all()
         )
 
+    # Pre-fetch deadline extensions for all tax years in view, grouped by tax_year_id.
+    ty_ids = [ty.id for ty, _ in rows if ty.advisor_id is not None]
+    extensions_by_ty = {}
+    if ty_ids:
+        for ext in (TaxYearExtension.query
+                    .filter(TaxYearExtension.tax_year_id.in_(ty_ids))
+                    .order_by(TaxYearExtension.created_at).all()):
+            extensions_by_ty.setdefault(ext.tax_year_id, []).append(ext)
+
     tax_years = []
     for ty, user in rows:
         # Skip any entries lacking an advisor_id, though filter already applies
         if ty.advisor_id is None:
             continue
+        exts = extensions_by_ty.get(ty.id, [])
         tax_years.append({
             'user_id': ty.user_id,
             'year': ty.year,
+            'extensions': [
+                {'previous_deadline': e.previous_deadline,
+                 'new_deadline': e.new_deadline,
+                 'note': e.note, 'created_at': e.created_at}
+                for e in exts
+            ],
+            'original_deadline': (exts[0].previous_deadline if exts else ty.deadline),
             'status': ty.status,
             'deadline': ty.deadline,
             'checklist_completed': ty.checklist_completed,
