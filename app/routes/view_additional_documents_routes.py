@@ -113,8 +113,11 @@ def view_additional_documents(year):
             mimetype='application/zip'
         )
 
+    from datetime import date
     return render_template(
         'view_additional_documents.html',
         tax_year=tax_year,
-        additional_documents=additional_documents
+        additional_documents=additional_documents,
+        client_user=User.query.get(tax_year.user_id),
+        today=date.today(),
     )

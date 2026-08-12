@@ -59,5 +59,7 @@
 
 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:24px;">
   <button type="button" class="btn btn-secondary" onclick="closeAdvisorDetails()">Schliessen</button>
+  {% if can_quote %}
   <button type="button" class="btn btn-primary" onclick="closeAdvisorDetails(); openQuote({{ advisor.id }});">Offerte anfragen</button>
+  {% endif %}
 </div>

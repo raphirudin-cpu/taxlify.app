@@ -33,7 +33,7 @@
   </div>
   {% for adv in advisors %}
   {% set parts = adv.name.split() %}
-  <div class="trow advisor-row" style="grid-template-columns:120px 1fr 160px 200px; padding:24px 26px; font-size:14px;"
+  <div class="trow advisor-row" style="grid-template-columns:120px 1fr 160px 200px; padding:14px 24px; font-size:14px;"
        data-name="{{ adv.name|lower }}"
        data-city="{{ (adv.city or '')|lower }}"
        data-rating="{{ adv.average_rating|int }}">

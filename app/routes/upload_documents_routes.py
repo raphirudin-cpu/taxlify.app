@@ -86,4 +86,9 @@ def upload_documents(year):
             return jsonify({'status': 'success', 'message': 'File uploaded successfully.'})
 
     documents_json = [{'id': doc.id, 'document_name': doc.document_name} for doc in required_documents]
-    return render_template('upload_documents.html', tax_year=year, required_documents=documents_json)
+    uploaded_docs = [
+        {'name': os.path.basename(doc.file_path), 'reviewed': doc.downloaded_on is not None}
+        for doc in required_documents if doc.file_path
+    ]
+    return render_template('upload_documents.html', tax_year=year,
+                           required_documents=documents_json, uploaded_docs=uploaded_docs)

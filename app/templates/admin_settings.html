@@ -1,141 +1,75 @@
 {% extends "app_base.html" %}
-{% block title %}Advisor Settings · Taxlify{% endblock %}
-
-{% block head %}
-<style>
-        /* Your existing styles */
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .form-group button {
-            padding: 10px 20px;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .form-group button:hover {
-            background-color: var(--primary-hover);
-        }
-        .success {
-            color: green;
-            margin-bottom: 15px;
-        }
-        .danger {
-            color: red;
-            margin-bottom: 15px;
-        }
-        .logo-preview {
-            margin-bottom: 15px;
-        }
-        .logo-preview img {
-            max-width: 200px;
-            max-height: 200px;
-            display: block;
-        }
-        .team-members-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .team-members-table th, .team-members-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .team-members-table th {
-            background-color: #f2f2f2;
-        }
-    </style>
-{% endblock %}
+{% block title %}Einstellungen · Taxlify{% endblock %}
+{% block topbar_title %}Einstellungen{% endblock %}
 
 {% block content %}
-        <div class="page-header"><h1>Settings</h1></div>
-        <form action="" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-group">
-                <label for="company_name">Company Name:</label>
-                <input type="text" id="company_name" name="company_name" value="{{ advisor.name if advisor else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city" value="{{ advisor.city if advisor else '' }}" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone:</label>
-                <input type="text" id="phone" name="phone" value="{{ advisor.phone if advisor else '' }}">
-            </div>
-            <div class="form-group">
-                <label for="website">Website:</label>
-                <input type="text" id="website" name="website" value="{{ advisor.website if advisor else '' }}">
-            </div>
-            <div class="form-group">
-                <label for="company_email">Company Email:</label>
-                <input type="email" id="company_email" name="company_email" value="{{ advisor.email if advisor else '' }}">
-            </div>
-            <div class="form-group">
-                <label for="logo">Upload Logo:</label>
-                <input type="file" id="logo" name="logo" accept="image/*">
-            </div>
-            <div class="form-group">
-                <button type="submit" name="update_settings">Save Settings</button>
-            </div>
-        </form>
+<div style="max-width:760px; display:flex; flex-direction:column; gap:20px;">
 
+  {# ---- Kanzlei ---- #}
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;">Kanzlei</div>
+    <form action="" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="field-grid">
+        <div class="field"><label for="company_name">Firmenname</label><input type="text" id="company_name" name="company_name" value="{{ advisor.name if advisor else '' }}" required></div>
+        <div class="field"><label for="city">Stadt</label><input type="text" id="city" name="city" value="{{ advisor.city if advisor else '' }}" required></div>
+        <div class="field"><label for="phone">Telefon</label><input type="text" id="phone" name="phone" value="{{ advisor.phone if advisor else '' }}"></div>
+        <div class="field"><label for="website">Website</label><input type="text" id="website" name="website" value="{{ advisor.website if advisor else '' }}"></div>
+        <div class="field" style="grid-column:1 / -1;"><label for="company_email">Firmen-E-Mail</label><input type="email" id="company_email" name="company_email" value="{{ advisor.email if advisor else '' }}"></div>
+      </div>
+
+      <div class="field" style="margin-top:4px;">
+        <label>Logo</label>
         {% if advisor and advisor.logo %}
-        <div class="logo-preview">
-            <label>Current Logo:</label>
-            <img src="{{ url_for('admin_settings.uploaded_logo', advisor_id=advisor.id, filename=advisor.logo.split('/')[-1]) }}" alt="Company Logo">
-            <form action="{{ url_for('admin_settings.delete_logo') }}" method="post" style="margin-top: 10px;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div class="form-group">
-                    <button type="submit">Delete Logo</button>
-                </div>
-            </form>
-        </div>
+          <div class="logo-slot" style="width:160px; height:80px; margin-bottom:10px;">
+            <img src="{{ url_for('admin_settings.uploaded_logo', advisor_id=advisor.id, filename=advisor.logo.split('/')[-1]) }}" alt="Logo">
+          </div>
         {% endif %}
+        <input type="file" id="logo" name="logo" accept="image/*">
+      </div>
 
-        <h2>Team Members</h2>
-        <!-- Add Member Form -->
-        <form action="" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-group">
-                <label for="team_member_email">Team Member Email:</label>
-                <input type="email" id="team_member_email" name="team_member_email" required>
-            </div>
-            <div class="form-group">
-                <button type="submit" name="add_team_member">Add Team Member</button>
-            </div>
-        </form>
+      <div class="between" style="margin-top:20px;">
+        <div></div>
+        <button type="submit" name="update_settings" value="1" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
 
-        <h3>Current Team Members</h3>
-        <table class="team-members-table">
-            <tr>
-                <th>Email</th>
-                <th>Actions</th>
-            </tr>
-            {% for member in team_members %}
-            <tr id="member-{{ member.id }}">
-                <td class="email-cell">{{ member.email }}</td>
-                <td>
-                    <form action="{{ url_for('admin_settings.remove_team_member') }}" method="post" style="display:inline; margin-left: 5px;">
+    {% if advisor and advisor.logo %}
+      <form action="{{ url_for('admin_settings.delete_logo') }}" method="post" style="margin-top:12px;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <input type="hidden" name="member_id" value="{{ member.id }}">
-                        <button type="submit" onclick="return confirm('Remove this member?')">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+        <button type="submit" class="text-action text-danger" onclick="return confirm('Logo wirklich löschen?')">Logo löschen</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {# ---- Teammitglieder ---- #}
+  <div class="card">
+    <div class="card-title" style="margin-bottom:16px;">Teammitglieder</div>
+    <form action="" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="row" style="align-items:flex-end;">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          <label for="team_member_email">E-Mail</label>
+          <input type="email" id="team_member_email" name="team_member_email" required>
+        </div>
+        <button type="submit" name="add_team_member" value="1" class="btn btn-primary">Hinzufügen</button>
+      </div>
+    </form>
+
+    <div style="margin-top:16px;">
+      {% for member in team_members %}
+        <div class="between" style="padding:14px 0; {% if not loop.last %}border-bottom:1px solid var(--hairline-in);{% endif %}">
+          <span style="font-size:14px;">{{ member.email }}</span>
+          <form action="{{ url_for('admin_settings.remove_team_member') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="member_id" value="{{ member.id }}">
+            <button type="submit" class="text-action text-danger" onclick="return confirm('Mitglied entfernen?')">Entfernen</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="empty">Noch keine Teammitglieder.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endblock %}

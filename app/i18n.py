@@ -78,9 +78,22 @@ def chf_amount(value):
     return f"CHF {chf(value)}"
 
 
+def chf2(value):
+    """8'420.50 — apostrophe thousands with two decimals (numeric cells)."""
+    if value is None or value == "":
+        return "—"
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    s = f"{n:,.2f}"
+    return s.replace(",", "'")
+
+
 def register_filters(app):
     app.jinja_env.filters["status_de"] = status_de
     app.jinja_env.filters["date_ch"] = date_ch
     app.jinja_env.filters["datetime_ch"] = datetime_ch
     app.jinja_env.filters["chf"] = chf
     app.jinja_env.filters["chf_amount"] = chf_amount
+    app.jinja_env.filters["chf2"] = chf2

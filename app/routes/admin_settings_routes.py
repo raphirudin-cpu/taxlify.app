@@ -56,7 +56,7 @@ def advisor_settings():
                         db.session.commit()
                     except Exception as e:
                         db.session.rollback()
-                        flash("Error saving advisor.", "danger")
+                        flash("Fehler beim Speichern der Kanzlei.", "danger")
                         return redirect(url_for('admin_settings.advisor_settings'))
 
                 # Save logo to filesystem
@@ -72,16 +72,16 @@ def advisor_settings():
                     logo_file.save(logo_path)
                     advisor.logo = os.path.join(str(advisor.id), 'Logo', filename)
                 except Exception as e:
-                    flash("Error uploading logo.", "danger")
+                    flash("Fehler beim Hochladen des Logos.", "danger")
                     return redirect(url_for('admin_settings.advisor_settings'))
 
         # Commit company settings
         try:
             db.session.commit()
-            flash("Settings updated successfully.", "success")
+            flash("Einstellungen gespeichert.", "success")
         except Exception as e:
             db.session.rollback()
-            flash("Error updating settings.", "danger")
+            flash("Fehler beim Speichern der Einstellungen.", "danger")
 
         return redirect(url_for('admin_settings.advisor_settings'))
 
@@ -89,7 +89,7 @@ def advisor_settings():
     if request.method == 'POST' and 'add_team_member' in request.form:
         # Ensure advisor exists
         if advisor is None:
-            flash("Please complete your company information before adding team members.", "danger")
+            flash("Bitte vervollständige zuerst die Kanzlei-Angaben.", "danger")
             return redirect(url_for('admin_settings.advisor_settings'))
 
         email = request.form.get('team_member_email')
@@ -99,18 +99,18 @@ def advisor_settings():
         user_exists = User.query.filter_by(email=email, role='advisor').first()
 
         if already:
-            flash("This team member is already added.", "danger")
+            flash("Dieses Teammitglied ist bereits hinzugefügt.", "danger")
         elif not user_exists:
-            flash("No advisor account found with that email address.", "danger")
+            flash("Kein Treuhänder-Konto mit dieser E-Mail gefunden.", "danger")
         else:
             tm = TeamMember(advisor_id=advisor.id, email=email)
             db.session.add(tm)
             try:
                 db.session.commit()
-                flash("Team member added successfully.", "success")
+                flash("Teammitglied hinzugefügt.", "success")
             except Exception as e:
                 db.session.rollback()
-                flash("Error adding team member.", "danger")
+                flash("Fehler beim Hinzufügen des Teammitglieds.", "danger")
 
         return redirect(url_for('admin_settings.advisor_settings'))
 
@@ -132,20 +132,20 @@ def advisor_settings():
 def remove_team_member():
     advisor = current_advisor()
     if not advisor:
-        flash("Access denied.", "danger")
+        flash("Zugriff verweigert.", "danger")
         return redirect(url_for('admin_settings.advisor_settings'))
 
     member_id = request.form.get('member_id')
     member    = TeamMember.query.filter_by(id=member_id, advisor_id=advisor.id).first()
 
     if not member:
-        flash("Team member not found.", "danger")
+        flash("Teammitglied nicht gefunden.", "danger")
     else:
         db.session.delete(member)
         if commit_or_rollback():
-            flash("Team member removed.", "success")
+            flash("Teammitglied entfernt.", "success")
         else:
-            flash("Error removing team member.", "danger")
+            flash("Fehler beim Entfernen des Teammitglieds.", "danger")
 
     return redirect(url_for('admin_settings.advisor_settings'))
 
@@ -163,18 +163,18 @@ def delete_logo():
         advisor.logo = None
 
         if not commit_or_rollback():
-            flash("Error updating database.", "danger")
+            flash("Fehler beim Speichern.", "danger")
             return redirect(url_for('admin_settings.advisor_settings'))
 
         if os.path.exists(logo_path):
             try:
                 os.remove(logo_path)
-                flash("Logo deleted successfully.", "success")
+                flash("Logo gelöscht.", "success")
             except Exception as e:
-                flash("Logo removed from DB but error deleting file.", "danger")
+                flash("Logo entfernt, aber die Datei konnte nicht gelöscht werden.", "danger")
         else:
-            flash("Logo reference removed but file not found on disk.", "warning")
+            flash("Logo entfernt, aber die Datei wurde nicht gefunden.", "warning")
     else:
-        flash("No logo found to delete.", "info")
+        flash("Kein Logo zum Löschen vorhanden.", "info")
 
     return redirect(url_for('admin_settings.advisor_settings'))

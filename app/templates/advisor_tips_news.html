@@ -1,94 +1,45 @@
 {% extends "app_base.html" %}
-{% block title %}Tips and News · Taxlify{% endblock %}
+{% block title %}Unterlagen · Taxlify{% endblock %}
+{% block topbar_title %}Unterlagen{% endblock %}
+
+{% set sections = [
+  ('login', 'Login-Dokumente', ['Aufforderung Einreichung der Steuererklärung']),
+  ('unselbst', 'Einkünfte aus unselbständiger Erwerbstätigkeit', ['Lohnausweise', 'Lohnausweise Nebenerwerb (Feuerwehr, Kommissionen)']),
+  ('selbst', 'Einkünfte aus selbständiger Erwerbstätigkeit', ['Jahresabschluss Selbstständigkeit']),
+  ('sozial', 'Einkünfte aus Sozial- und anderen Versicherungen', ['EO Auszug der Ausgleichskasse', 'Bestätigung AHV/IV Renten & Pensionskassenrenten', 'Übersicht Arbeitslosengeld', 'Übersicht Krankentaggeld/Unfalltaggeld']),
+  ('weitere', 'Weitere Einkünfte Unterhaltsbeiträge', ['Erhaltene Unterhaltsbeiträge', 'Aufstellung Vermögen und Erträge aus unverteilter Erbschaft', 'Aufstellung erhaltene Erträge Erbschaften / Erbteilungsvertrag', 'Aufstellung erhaltene Erträge Schenkungen', 'Aufstellung erhaltene übrige Einkünfte', 'Aufstellung Kapitalabfindungen anstelle wiederkehrender Leistungen']),
+  ('liegen', 'Liegenschaften', ['Schätzungsverfügung der Steuerverwaltung', 'Belege über Liegenschaftsaufwendungen', 'Steuerbescheinigung Hypothek', 'Aufstellung Mieteinnahmen']),
+  ('beruf', 'Berufsauslagen', ['Belge/Rechnungen ÖV Abonnement', 'Belege/Rechnungen für Auslagen im Homeoffice (Büromöbel/Strom etc.)', 'Belege/Rechnungen für sonstige Auslagen (Berufskleider)']),
+  ('wochen', 'Wochenaufenthalter', ['Mietvertrag von zweiter Wohnung']),
+  ('schuld', 'Schuldzinsen / Unterhaltsbeiträge / Rentenleistungen', ['Darlehnsverträge', 'Zins & Kreditbescheinigungen', 'Aufstellung bezahlte Unterhaltsbeiträge', 'Belege Rentenzahlungen und dauernde Lasten, Wohnrecht']),
+  ('vorsorge', 'Beiträge an Vorsorgeeinrichtungen', ['Bescheinigung über Vorsorgebeiträge (2. Säule, 3. Säule)']),
+  ('abzuege', 'Weitere Abzüge', ['Belege/Rechnungen Kosten für Kinderbetreuung durch Dritte', 'Belege bezahlte AHV-, IV- und EO-Beiträge nicht erwerbstätiger Personen', 'Studien Bescheinigung', 'Belege/Rechnungen der bezahlten Weiterbildungskosten', 'Versicherungsausweis Krankenkasse', 'Belege/Rechnungen von Zahnarztkosten, Naturmedizin, Sehhilfen (Brillen), etc.', 'Belege/Rechnungen von Behinderungsbedingte Kosten (Kosten Pflege- und Altersheim, Arztzeugnis)', 'Spendenbescheinigungen']),
+  ('vermoegen', 'Bewegliches Vermögen', ['Steuerausweis Bankkonten', 'Wertschriftenverzeichnisse der Banken', 'Auszug Wallets für Kryptowährungen', 'Bescheinigung Lebens- und Rentenversicherungen', 'Aufstellung sonstige Vermögenswerte']),
+] %}
 
 {% block content %}
-        <div class="page-header"><h1>Wichtigste Dokumente</h1></div>
+<div style="display:grid; grid-template-columns:260px 1fr; gap:32px; align-items:start;">
+  <nav style="position:sticky; top:24px; display:flex; flex-direction:column; gap:2px;">
+    {% for id, title, items in sections %}
+      <a href="#{{ id }}" style="display:block; padding:8px 12px; border-radius:6px; font-size:13px; color:{% if loop.first %}var(--sb-text); background:var(--black){% else %}var(--ink-2){% endif %};">{{ title }}</a>
+    {% endfor %}
+  </nav>
 
-        <h3>Login-Dokumente</h3>
-        <ul>
-            <li>Aufforderung Einreichung der Steuererklärung</li>
-        </ul>
-
-        <h3>Einkünfte aus unselbständiger Erwerbstätigkeit</h3>
-        <ul>
-            <li>Lohnausweise</li>
-            <li>Lohnausweise Nebenerwerb (Feuerwehr, Kommissionen)</li>
-        </ul>
-
-        <h3>Einkünfte aus selbständiger Erwerbstätigkeit</h3>
-        <ul>
-            <li>Jahresabschluss Selbstständigkeit</li>
-        </ul>
-
-        <h3>Einkünfte aus Sozial- und anderen Versicherungen</h3>
-        <ul>
-            <li>EO Auszug der Ausgleichskasse</li>
-            <li>Bestätigung AHV/IV Renten & Pensionskassenrenten</li>
-            <li>Übersicht Arbeitslosengeld</li>
-            <li>Übersicht Krankentaggeld/Unfalltaggeld</li>
-        </ul>
-
-        <h3>Weitere Einkünfte Unterhaltsbeiträge</h3>
-        <ul>
-            <li>Erhaltene Unterhaltsbeiträge</li>
-            <li>Aufstellung Vermögen und Erträge aus unverteilter Erbschaft</li>
-            <li>Aufstellung erhaltene Erträge Erbschaften / Erbteilungsvertrag</li>
-            <li>Aufstellung erhaltene Erträge Schenkungen</li>
-            <li>Aufstellung erhaltene übrige Einkünfte</li>
-            <li>Aufstellung Kapitalabfindungen anstelle wiederkehrender Leistungen</li>
-        </ul>
-
-        <h3>Liegenschaften</h3>
-        <ul>
-            <li>Schätzungsverfügung der Steuerverwaltung</li>
-            <li>Belege über Liegenschaftsaufwendungen</li>
-            <li>Steuerbescheinigung Hypothek</li>
-            <li>Aufstellung Mieteinnahmen</li>
-        </ul>
-
-        <h3>Berufsauslagen</h3>
-        <ul>
-            <li>Belge/Rechnungen ÖV Abonnement</li>
-            <li>Belege/Rechnungen für Auslagen im Homeoffice (Büromöbel/Strom etc.)</li>
-            <li>Belege/Rechnungen für sonstige Auslagen (Berufskleider)</li>
-        </ul>
-
-        <h3>Wochenaufenthalter</h3>
-        <ul>
-            <li>Mietvertrag von zweiter Wohnung</li>
-        </ul>
-
-        <h3>Schuldzinsen / Unterhaltsbeiträge / Rentenleistungen</h3>
-        <ul>
-            <li>Darlehnsverträge</li>
-            <li>Zins & Kreditbescheinigungen</li>
-            <li>Aufstellung bezahlte Unterhaltsbeiträge</li>
-            <li>Belege Rentenzahlungen und dauernde Lasten, Wohnrecht</li>
-        </ul>
-
-        <h3>Beiträge an Vorsorgeeinrichtungen</h3>
-        <ul>
-            <li>Bescheinigung über Vorsorgebeiträge (2. Säule, 3. Säule)</li>
-        </ul>
-
-        <h3>Weitere Abzüge</h3>
-        <ul>
-            <li>Belege/Rechnungen Kosten für Kinderbetreuung durch Dritte</li>
-            <li>Belege bezahlte AHV-, IV- und EO-Beiträge nicht erwerbstätiger Personen</li>
-            <li>Studien Bescheinigung</li>
-            <li>Belege/Rechnungen der bezahlten Weiterbildungskosten</li>
-            <li>Versicherungsausweis Krankenkasse</li>
-            <li>Belege/Rechnungen von Zahnarztkosten, Naturmedizin, Sehhilfen (Brillen), etc.</li>
-            <li>Belege/Rechnungen von Behinderungsbedingte Kosten (Kosten Pflege- und Altersheim, Arztzeugnis)</li>
-            <li>Spendenbescheinigungen</li>
-        </ul>
-
-        <h3>Bewegliches Vermögen</h3>
-        <ul>
-            <li>Steuerausweis Bankkonten</li>
-            <li>Wertschriftenverzeichnisse der Banken</li>
-            <li>Auszug Wallets für Kryptowährungen</li>
-            <li>Bescheinigung Lebens- und Rentenversicherungen</li>
-            <li>Aufstellung sonstige Vermögenswerte</li>
-        </ul>
+  <div style="max-width:720px;">
+    <h1 style="font-size:24px; letter-spacing:-0.02em; margin-bottom:8px;">Wichtigste Dokumente</h1>
+    <p style="font-size:14px; color:var(--ink-2); line-height:1.6; margin-bottom:24px;">
+      Diese Unterlagen benötigen deine Kundinnen und Kunden je nach Situation für die Steuererklärung.
+    </p>
+    <div class="stack">
+      {% for id, title, items in sections %}
+        <div class="card" id="{{ id }}" style="padding:0;">
+          <div class="card-head">{{ title }}</div>
+          {% for item in items %}
+            <div style="padding:14px 24px; font-size:14px; {% if not loop.last %}border-bottom:1px solid var(--hairline-in);{% endif %}">{{ item }}</div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endblock %}

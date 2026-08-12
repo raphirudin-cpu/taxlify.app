@@ -56,10 +56,16 @@ def advisor_details():
 
     average_rating = ratings_total / ratings_count if ratings_count > 0 else 0
 
+    # The "Offerte anfragen" primary only makes sense in the client marketplace,
+    # where the openQuote() JS exists. Advisors/admins view the read-only directory.
+    from flask_login import current_user
+    can_quote = current_user.is_authenticated and current_user.role == 'user'
+
     return render_template(
         'advisor_details.html',
         advisor=advisor,
         logo=logo_url,
         feedbacks=feedbacks,
-        average_rating=average_rating
+        average_rating=average_rating,
+        can_quote=can_quote,
     )

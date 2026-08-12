@@ -106,9 +106,9 @@
     <div class="trow" style="grid-template-columns:90px 150px 1fr 1fr 1fr;">
       <div class="cell-strong tnum">{{ s.date.year }}</div>
       <div class="cell-muted">{{ s.date|date_ch }}</div>
-      <div class="right tnum">{{ s.taxable_income|chf }}</div>
-      <div class="right tnum">{{ s.taxable_assets|chf }}</div>
-      <div class="right tnum">{{ s.paid_taxes|chf }}</div>
+      <div class="right tnum">{{ s.taxable_income|chf2 }}</div>
+      <div class="right tnum">{{ s.taxable_assets|chf2 }}</div>
+      <div class="right tnum">{{ s.paid_taxes|chf2 }}</div>
     </div>
     {% endfor %}
   {% else %}

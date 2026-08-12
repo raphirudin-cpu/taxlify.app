@@ -46,6 +46,18 @@
     {% else %}
       <div class="card"><div class="empty">Keine angeforderten Belege für dieses Steuerjahr.</div></div>
     {% endif %}
+
+    {% if uploaded_docs %}
+      <div class="card" style="margin-top:16px; padding:0;">
+        <div class="card-head">Bereits hochgeladen</div>
+        {% for d in uploaded_docs %}
+          <div class="between" style="padding:14px 26px; {% if not loop.last %}border-bottom:1px solid var(--hairline-in);{% endif %}">
+            <span style="font-size:14px;">{{ d.name }}</span>
+            <span style="font-size:13px;" class="{{ 'muted' if not d.reviewed }}">{% if d.reviewed %}<span style="color:var(--success-text);">Geprüft</span>{% else %}In Prüfung{% endif %}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
   </div>
 
   {# Help panel #}

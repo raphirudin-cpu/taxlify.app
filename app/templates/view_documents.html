@@ -88,10 +88,11 @@
 
     <div class="card">
       <div class="section-label">Kundin</div>
+      {% set urg = 'danger' if (today and tax_year.deadline and tax_year.deadline < today) else ('warning' if (today and tax_year.deadline and (tax_year.deadline - today).days <= 90) else '') %}
       <div class="stack-sm" style="gap:12px;">
         <div class="between">
-          <span class="muted" style="font-size:13px;">Kundenprofil</span>
-          <a class="text-action" href="{{ url_for('admin_clients.client_profile', user_id=tax_year.user_id) }}">Öffnen</a>
+          <span class="muted" style="font-size:13px;">Kunde</span>
+          <a class="text-action" href="{{ url_for('admin_clients.client_profile', user_id=tax_year.user_id) }}">{% if client_user %}{{ (client_user.firstname ~ ' ' ~ client_user.lastname)|trim or client_user.email }}{% else %}Kundenprofil öffnen{% endif %}</a>
         </div>
         <div class="between">
           <span class="muted" style="font-size:13px;">Steuerjahr</span>
@@ -99,7 +100,7 @@
         </div>
         <div class="between">
           <span class="muted" style="font-size:13px;">Frist</span>
-          <span class="pill">{{ tax_year.deadline|date_ch }}</span>
+          <span class="pill {{ urg }}">{{ tax_year.deadline|date_ch }}</span>
         </div>
         <div class="between">
           <span class="muted" style="font-size:13px;">Status</span>

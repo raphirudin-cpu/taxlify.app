@@ -1,108 +1,101 @@
 {% extends "app_base.html" %}
-{% block title %}Upload Additional Documents · Taxlify{% endblock %}
+{% block title %}Zusätzliche Dokumente · Taxlify{% endblock %}
+{% block topbar_title %}Zusätzliche Dokumente{% endblock %}
+{% block subtitle %}<span class="subtitle">Steuerjahr {{ tax_year }}</span>{% endblock %}
 
 {% block head %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
-  <script>
-    Dropzone.autoDiscover = false;
-  </script>
+  <script>Dropzone.autoDiscover = false;</script>
 {% endblock %}
 
 {% block content %}
-    <div class="page-header"><h1>Upload Additional Documents for Tax Year {{ tax_year }}</h1></div>
-
+<div class="two-col">
+  <div>
     {% if additional_documents %}
-      <form id="upload-additional-form" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        {% for doc in additional_documents %}
-          <div class="form-group">
-            <label for="dropzone_{{ doc.id }}">Request: {{ doc.request_text }}</label>
-            <div class="dropzone" id="dropzone_{{ doc.id }}">
-              <div class="dz-message">Drag and drop file here or click to select a file.</div>
-            </div>
+      <div class="card">
+        <div class="between" style="margin-bottom:20px;">
+          <div class="card-title">Zusätzlich angefordert</div>
+          <div class="muted" style="font-size:13px;">{{ additional_documents|length }} angefordert</div>
+        </div>
+
+        <form id="upload-additional-form" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="stack">
+            {% for doc in additional_documents %}
+              <div class="card-sm" style="border:1px solid var(--hairline);">
+                <div class="between" style="margin-bottom:10px;">
+                  <div style="font-size:14px; font-weight:500;">{{ doc.request_text }}</div>
+                  {% if doc.file_path %}<span class="pill success">Hochgeladen</span>{% endif %}
+                </div>
+                <div class="dropzone" id="dropzone_{{ doc.id }}">
+                  <div class="dz-message">
+                    <div class="dz-title">Datei hierher ziehen oder klicken</div>
+                    <div class="dz-sub">PDF, PNG oder JPG · max. 5 MB pro Datei</div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
           </div>
-        {% endfor %}
-        <button type="button" class="button-blue" id="upload-all">Upload All Documents</button>
-      </form>
+          <div class="between" style="margin-top:20px;">
+            <div></div>
+            <button type="button" class="btn btn-primary" id="upload-all">Belege hochladen</button>
+          </div>
+        </form>
+      </div>
     {% else %}
-      <p>No additional document requests found for this tax year.</p>
+      <div class="card"><div class="empty">Keine zusätzlichen Anfragen für dieses Steuerjahr.</div></div>
     {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px;">Warum diese Belege?</div>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5;">
+      Dein Treuhänder hat zusätzliche Unterlagen angefordert, um deine Steuererklärung
+      abzuschliessen. Lade sie als PDF, PNG oder JPG hoch.
+    </p>
+    <div style="height:1px; background:var(--hairline); margin:16px 0;"></div>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5;">
+      Fragen zu einer Anfrage? Melde dich bei deinem Treuhänder.
+    </p>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
-  <!-- Pass the upload URL and additional documents data to JavaScript -->
-  <script id="upload-url" type="application/json">
-    {{ url_for('upload_additional_documents.upload_additional_documents', year=tax_year) | tojson | safe }}
-  </script>
-  <script id="additional-documents-data" type="application/json">
-    {{ additional_documents | tojson | safe }}
-  </script>
-
+  <script id="upload-url" type="application/json">{{ url_for('upload_additional_documents.upload_additional_documents', year=tax_year) | tojson | safe }}</script>
+  <script id="additional-documents-data" type="application/json">{{ additional_documents | tojson | safe }}</script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      // Retrieve and parse the upload URL
-      var uploadUrlElement = document.getElementById("upload-url");
-      var uploadUrl;
-      try {
-        uploadUrl = JSON.parse(uploadUrlElement.textContent.trim());
-      } catch (e) {
-        console.error("Error parsing upload URL:", e);
-        return;
-      }
-
-      // Retrieve and parse the additional documents data
-      var additionalDocsElement = document.getElementById("additional-documents-data");
-      var additionalDocuments;
-      try {
-        additionalDocuments = JSON.parse(additionalDocsElement.textContent.trim());
-      } catch (e) {
-        console.error("Error parsing additional documents data:", e);
-        return;
-      }
-
+      var uploadBtn = document.getElementById("upload-all");
+      if (!uploadBtn) return;
+      var uploadUrl = JSON.parse(document.getElementById("upload-url").textContent.trim());
+      var docs = JSON.parse(document.getElementById("additional-documents-data").textContent);
       var allDropzones = [];
-
-      // Iterate over each document request and initialize a Dropzone for it
-      additionalDocuments.forEach(function(doc) {
-        var docId = doc.id;
-        var dropzoneId = "dropzone_" + docId;
-        var dropzoneElement = document.getElementById(dropzoneId);
-        if (!dropzoneElement) {
-          console.error("Dropzone element not found for document ID:", docId);
-          return;
-        }
-        var dz = new Dropzone("#" + dropzoneId, {
-          url: uploadUrl,
-          paramName: "file",
-          autoProcessQueue: false,
-          maxFilesize: 5,
-          acceptedFiles: ".pdf,.png,.jpg,.jpeg",
-          init: function() {
-            var myDropzone = this;
-            allDropzones.push(myDropzone);
-            // Append document id to the form data when sending.
-            myDropzone.on("sending", function(file, xhr, formData) {
-              formData.append("id", docId);
-            });
-            myDropzone.on("success", function(file, response) {
-              console.log("Upload success for document " + docId, response);
-            });
-            myDropzone.on("error", function(file, response) {
-              console.error("Upload error for document " + docId, response);
-            });
-          }
+      setTimeout(function () {
+        docs.forEach(function (doc) {
+          var el = document.getElementById("dropzone_" + doc.id);
+          if (!el) return;
+          new Dropzone(el, {
+            url: uploadUrl, paramName: "file", autoProcessQueue: false, uploadMultiple: false,
+            addRemoveLinks: true, clickable: el, maxFilesize: 5, acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+            init: function () {
+              this.complete = false;
+              allDropzones.push(this);
+              this.on("sending", function (file, xhr, formData) { formData.append("id", doc.id); });
+              this.on("queuecomplete", function () {
+                this.complete = true;
+                if (allDropzones.filter(function(dz){return dz.files.length>0;}).every(function (dz) { return dz.complete; })) {
+                  window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Zus%C3%A4tzliche+Belege+hochgeladen";
+                }
+              });
+            }
+          });
         });
-      });
-
-      // When the "Upload All Documents" button is clicked, process all queues.
-      document.getElementById("upload-all").addEventListener("click", function() {
-        allDropzones.forEach(function(dz) {
-          dz.processQueue();
+        uploadBtn.addEventListener("click", function () {
+          allDropzones.forEach(function (dz) { if (dz.files.length > 0) dz.processQueue(); });
         });
-        // Redirect after uploads are initiated (adjust as needed).
-        window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Additional+documents+upload+initiated";
-      });
+      }, 500);
     });
   </script>
 {% endblock %}

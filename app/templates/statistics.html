@@ -24,7 +24,7 @@
     <div class="k-num">{% if latest %}{{ latest.taxable_income|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.taxable_income|float) - (prev.taxable_income|float) %}
-      <div class="k-delta">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
+      <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
     {% elif latest %}
       <div class="k-delta">Erster Eintrag</div>
     {% endif %}
@@ -34,7 +34,7 @@
     <div class="k-num">{% if latest %}{{ latest.taxable_assets|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.taxable_assets|float) - (prev.taxable_assets|float) %}
-      <div class="k-delta">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
+      <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
     {% elif latest %}
       <div class="k-delta">Erster Eintrag</div>
     {% endif %}
@@ -44,7 +44,7 @@
     <div class="k-num">{% if latest %}{{ latest.paid_taxes|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.paid_taxes|float) - (prev.paid_taxes|float) %}
-      <div class="k-delta">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
+      <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
     {% elif latest %}
       <div class="k-delta">Erster Eintrag</div>
     {% endif %}
