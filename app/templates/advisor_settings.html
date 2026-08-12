@@ -1,149 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .form-group button {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-        }
-        .form-group button:hover {
-            background-color: #0056b3;
-        }
+{% extends "app_base.html" %}
+{% block title %}Einstellungen · Taxlify{% endblock %}
+{% block topbar_title %}Einstellungen{% endblock %}
+{% block subtitle %}<span class="subtitle">Profil und Benachrichtigungen</span>{% endblock %}
 
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-      
-        {% if current_user.role == 'admin' %}
-          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-        {% endif %}
-      
-        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+{% block content %}
+<div style="max-width:760px; display:flex; flex-direction:column; gap:20px;">
+
+  <form action="{{ url_for('advisor_settings.advisor_settings') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+    {# ---- Profil ---- #}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:20px;">Profil</div>
+      <div class="field-grid">
+        <div>
+          <label for="lastname">Name</label>
+          <input type="text" id="lastname" name="lastname" value="{{ '' if user.lastname == 'None' else user.lastname }}" required>
+        </div>
+        <div>
+          <label for="firstname">Vorname</label>
+          <input type="text" id="firstname" name="firstname" value="{{ '' if user.firstname == 'None' else user.firstname }}" required>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label for="street">Strasse</label>
+          <input type="text" id="street" name="street" value="{{ '' if user.street == 'None' else user.street }}" required>
+        </div>
+        <div>
+          <label for="zip_code">PLZ</label>
+          <input type="text" id="zip_code" name="zip_code" value="{{ '' if user.zipcode == 'None' else user.zipcode }}" required>
+        </div>
+        <div>
+          <label for="city">Ort</label>
+          <input type="text" id="city" name="city" value="{{ '' if user.city == 'None' else user.city }}" required>
+        </div>
+        <div>
+          <label for="birthday">Geburtsdatum</label>
+          <input type="date" id="birthday" name="birthday" value="{{ '' if user.birthday == 'None' else user.birthday }}" required>
+        </div>
+        <div>
+          <label for="phone">Telefon</label>
+          <input type="text" id="phone" name="phone" value="{{ '' if user.phone == 'None' else user.phone }}" required>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label for="email">E-Mail</label>
+          <input type="email" id="email" name="email" value="{{ '' if user.email == 'None' else user.email }}" required>
+        </div>
+        <div style="grid-column:1/-1;">
+          <label for="contact_option">Bevorzugter Kontakt</label>
+          <select id="contact_option" name="contact_option" required>
+            <option value="">Bitte wählen</option>
+            <option value="email"    {% if user.contact_option == 'email' %}selected{% endif %}>E-Mail</option>
+            <option value="sms"      {% if user.contact_option == 'sms' %}selected{% endif %}>SMS</option>
+            <option value="whatsapp" {% if user.contact_option == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
+          </select>
+        </div>
       </div>
-      
-    <div class="content">
-        <h2>Settings</h2>
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form action="{{ url_for('advisor_settings.advisor_settings') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-group">
-                <label for="lastname">Name:</label>
-                <input type="text" id="lastname" name="lastname" value="{{ '' if user.lastname == 'None' else user.lastname }}" required>
-            </div>
-            <div class="form-group">
-                <label for="firstname">Surname:</label>
-                <input type="text" id="firstname" name="firstname" value="{{ '' if user.firstname == 'None' else user.firstname }}" required>
-            </div>
-            <div class="form-group">
-                <label for="street">Street:</label>
-                <input type="text" id="street" name="street" value="{{ '' if user.street == 'None' else user.street }}" required>
-            </div>
-            <div class="form-group">
-                <label for="city">City:</label>
-                <input type="text" id="city" name="city" value="{{ '' if user.city == 'None' else user.city }}" required>
-            </div>
-            <div class="form-group">
-                <label for="zip_code">Zip Code:</label>
-                <input type="text" id="zip_code" name="zip_code" value="{{ '' if user.zipcode == 'None' else user.zipcode }}" required>
-            </div>
-            <div class="form-group">
-                <label for="birthday">Birthday:</label>
-                <input type="date" id="birthday" name="birthday" value="{{ '' if user.birthday == 'None' else user.birthday }}" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone Number:</label>
-                <input type="text" id="phone" name="phone" value="{{ '' if user.phone == 'None' else user.phone }}" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="{{ '' if user.email == 'None' else user.email }}" required>
-            </div>
-            <div class="form-group">
-                <label for="contact_option">Preferred Contact Option:</label>
-                <select id="contact_option" name="contact_option" required>
-                    <option value="email" {% if user.contact_option == 'email' %}selected{% endif %}>E-Mail</option>
-                    <option value="sms" {% if user.contact_option == 'sms' %}selected{% endif %}>SMS</option>
-                    <option value="whatsapp" {% if user.contact_option == 'whatsapp' %}selected{% endif %}>WhatsApp</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Notifications:</label>
-                <div class="custom-checkbox">
-                    <input type="checkbox" id="notify_status_changes" name="notify_status_changes" {% if user.notify_status_changes %}checked{% endif %}>
-                    <label for="notify_status_changes">Status Changes</label>
-                </div>
-                <div class="custom-checkbox">
-                    <input type="checkbox" id="notify_new_requests" name="notify_new_requests" {% if user.notify_new_requests %}checked{% endif %}>
-                    <label for="notify_new_requests">New requests from Advisor</label>
-                </div>
-                <div class="custom-checkbox">
-                    <input type="checkbox" id="notify_deadline" name="notify_deadline" {% if user.notify_deadline %}checked{% endif %}>
-                    <label for="notify_deadline">Deadline of Tax Return is due</label>
-                </div>
-            </div>
-            <div class="form-group">
-                <button type="submit" name="update_settings">Save Settings</button>
-            </div>
-        </form>
-
-        <hr>
-
-        <!-- PASSWORD CHANGE FORM -->
-        <form action="{{ url_for('advisor_settings.advisor_settings') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <h3>Change Password</h3>
-            <div class="form-group">
-                <label for="old_password">Current Password:</label>
-                <input type="password" id="old_password" name="old_password" required>
-            </div>
-            <div class="form-group">
-                <label for="new_password">New Password:</label>
-                <input type="password" id="new_password" name="new_password" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm New Password:</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            <div class="form-group">
-                <button type="submit" name="change_password">Change Password</button>
-            </div>
-        </form>
     </div>
-</body>
-</html>
+
+    {# ---- Benachrichtigungen ---- #}
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title" style="margin-bottom:4px;">Benachrichtigungen</div>
+
+      <div class="between" style="padding:16px 0; border-bottom:1px solid var(--hairline-in);">
+        <div>
+          <div style="font-size:14px;">Statusänderungen</div>
+          <div class="muted" style="font-size:12px;">Wir informieren dich, wenn sich der Stand einer Steuererklärung ändert.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" name="notify_status_changes" {% if user.notify_status_changes %}checked{% endif %}><span class="track"></span><span class="knob"></span></label>
+      </div>
+
+      <div class="between" style="padding:16px 0; border-bottom:1px solid var(--hairline-in);">
+        <div>
+          <div style="font-size:14px;">Neue Anfragen vom Treuhänder</div>
+          <div class="muted" style="font-size:12px;">Erhalte eine Nachricht, wenn neue Anfragen eintreffen.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" name="notify_new_requests" {% if user.notify_new_requests %}checked{% endif %}><span class="track"></span><span class="knob"></span></label>
+      </div>
+
+      <div class="between" style="padding:16px 0;">
+        <div>
+          <div style="font-size:14px;">Fristen</div>
+          <div class="muted" style="font-size:12px;">Wir erinnern dich rechtzeitig an anstehende Abgabefristen.</div>
+        </div>
+        <label class="toggle"><input type="checkbox" name="notify_deadline" {% if user.notify_deadline %}checked{% endif %}><span class="track"></span><span class="knob"></span></label>
+      </div>
+    </div>
+
+    {# ---- Footer ---- #}
+    <div class="row" style="justify-content:flex-end; margin-top:20px;">
+      <button type="button" class="btn btn-secondary" onclick="openModal('passwordModal')">Passwort ändern</button>
+      <button type="submit" name="update_settings" class="btn btn-primary">Speichern</button>
+    </div>
+  </form>
+</div>
+
+{# ---- Passwort ändern modal ---- #}
+<div class="modal" id="passwordModal">
+  <div class="modal-content" style="max-width:420px;">
+    <span class="modal-close" onclick="closeModal('passwordModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Passwort ändern</h2>
+    <form action="{{ url_for('advisor_settings.advisor_settings') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="field"><label for="old_password">Aktuelles Passwort</label><input type="password" id="old_password" name="old_password" required></div>
+      <div class="field"><label for="new_password">Neues Passwort</label><input type="password" id="new_password" name="new_password" required></div>
+      <div class="field"><label for="confirm_password">Neues Passwort bestätigen</label><input type="password" id="confirm_password" name="confirm_password" required></div>
+      <button type="submit" name="change_password" class="btn btn-primary btn-block">Passwort ändern</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){ if(e.target === m) m.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(function(m){ m.classList.remove('open'); });
+  });
+</script>
+{% endblock %}

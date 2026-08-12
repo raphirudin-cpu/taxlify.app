@@ -11,7 +11,7 @@ billing_bp = Blueprint('billing', __name__, url_prefix='/billing')
 
 def _ensure_admin():
     if current_user.role != 'admin':
-        flash("Access denied.", "danger")
+        flash("Zugriff verweigert.", "danger")
         return False
     return True
 
@@ -95,7 +95,7 @@ def billing_update():
     extra_slots = request.form.get('extra_slots', type=int, default=0)
 
     if not tax_year:
-        flash("Please select a tax year.", "warning")
+        flash("Bitte wähle ein Steuerjahr.", "warning")
         return redirect(url_for('billing.billing_index'))
 
     purchase = Subscription.query.filter_by(
@@ -106,11 +106,11 @@ def billing_update():
     # CASE 1: new purchase for that year
     if purchase is None:
         if not new_plan_id:
-            flash("Please select a plan for that year.", "warning")
+            flash("Bitte wähle einen Plan für dieses Jahr.", "warning")
             return redirect(url_for('billing.billing_index'))
         plan = Plan.query.get(new_plan_id)
         if not plan:
-            flash("Plan not found.", "danger")
+            flash("Plan nicht gefunden.", "danger")
             return redirect(url_for('billing.billing_index'))
 
         purchase = Subscription(
@@ -123,12 +123,12 @@ def billing_update():
 
         amount = plan.monthly_price
         desc   = f"{plan.base_slots}-slot package for {tax_year}"
-        flash(f"Purchased {plan.name} for {tax_year}: {amount:.2f}", "success")
+        flash(f"{plan.name} für {tax_year} gekauft: {amount:.2f}", "success")
 
     # CASE 2: adding extra slots to existing year
     else:
         if extra_slots <= 0:
-            flash("Enter a positive number of extra slots.", "warning")
+            flash("Bitte gib eine positive Anzahl zusätzlicher Slots ein.", "warning")
             return redirect(url_for('billing.billing_index'))
 
         # tiered per-slot pricing
@@ -151,7 +151,7 @@ def billing_update():
         purchase.slots += extra_slots
 
         desc = f"{extra_slots} extra slot(s) for {tax_year}"
-        flash(f"Added {extra_slots} slots to {tax_year} @ {slot_rate:.2f} each: {amount:.2f}", "success")
+        flash(f"{extra_slots} Slots zu {tax_year} hinzugefügt @ {slot_rate:.2f} je: {amount:.2f}", "success")
 
     # Record a one-time invoice
     invoice = Invoice(
@@ -161,6 +161,6 @@ def billing_update():
     )
     db.session.add(invoice)
     if not commit_or_rollback():
-        flash("Error recording the invoice.", "danger")
+        flash("Fehler beim Erfassen der Rechnung.", "danger")
 
     return redirect(url_for('billing.billing_index'))

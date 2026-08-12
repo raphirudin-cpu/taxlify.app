@@ -98,17 +98,17 @@ def admin_dashboard():
     # — Document & Approval Pipeline
     pending_docs   = TaxYear.query.filter_by(
         advisor_id=advisor_id,
-        uploaded_documents=1,
-        documents_approved=0
+        uploaded_documents=True,
+        documents_approved=False
     ).count()
     drafts_pending = TaxYear.query.filter_by(
         advisor_id=advisor_id,
-        draft_tax_return_submitted=1,
-        draft_tax_return_approved=0
+        draft_tax_return_submitted=True,
+        draft_tax_return_approved=False
     ).count()
     finals_ready   = TaxYear.query.filter_by(
         advisor_id=advisor_id,
-        final_tax_return_submitted=1
+        final_tax_return_submitted=True
     ).count()
 
     # — Task & Follow-Up Queue: only include if documents uploaded
@@ -122,9 +122,9 @@ def admin_dashboard():
         .filter(
             TaxYear.advisor_id == advisor_id,
             TaxYear.deadline < today,
-            TaxYear.uploaded_documents == True,           # <— only these
-            TaxYear.documents_approved == True,           # <— ensure approved before draft/final
-            TaxYear.final_tax_return_submitted == 0
+            TaxYear.uploaded_documents.is_(True),           # <— only these
+            TaxYear.documents_approved.is_(True),           # <— ensure approved before draft/final
+            TaxYear.final_tax_return_submitted.is_(False)
         )
         .order_by(TaxYear.deadline)
         .all()
@@ -135,10 +135,10 @@ def admin_dashboard():
         tasks = []
         # Draft only once docs are approved (we already filtered for approved)
         if not ty.draft_tax_return_submitted:
-            tasks.append("Submit draft tax return")
+            tasks.append("Entwurf einreichen")
         # Final only once draft is in
         elif not ty.final_tax_return_submitted:
-            tasks.append("Submit final tax return")
+            tasks.append("Finale Steuererklärung einreichen")
 
         overdue_items.append({
             'client_name': f"{first} {last}",

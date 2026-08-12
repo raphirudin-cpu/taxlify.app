@@ -1,84 +1,112 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request More Documents</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .form-group p {
-            margin: 0;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .navbar a {
-            margin-right: 15px;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('settings.settings') }}">Settings</a>
-        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+{% extends "app_base.html" %}
+{% block title %}Mehr anfordern · Taxlify{% endblock %}
+{% block topbar_title %}Mehr anfordern{% endblock %}
+{% block subtitle %}<span class="subtitle">Steuerjahr {{ year }}</span>{% endblock %}
+
+{% block content %}
+<a class="back-link" href="{{ url_for('advisor_dashboard.advisor_dashboard') }}">← Zurück zum Arbeitsvorrat</a>
+
+<div style="max-width:680px;">
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+
+    <div class="card" style="padding:26px 28px; display:flex; flex-direction:column; gap:22px;">
+      <div>
+        <div style="font-size:18px; font-weight:600;">Weitere Unterlagen anfordern</div>
+        <div class="muted" style="font-size:13px; margin-top:4px;">Steuerjahr {{ year }} · Kundennummer {{ user_id }}</div>
+      </div>
+
+      {# ---- Add row ---- #}
+      <div class="row" style="gap:10px; flex-wrap:nowrap;">
+        <input type="text" id="documentRequestInput" placeholder="Unterlage benennen, z. B. Steuerausweis Bankkonten" style="flex:1;">
+        <button type="button" class="btn btn-secondary" id="addRequestButton">Hinzufügen</button>
+      </div>
+
+      {# ---- Added items ---- #}
+      <div>
+        <div class="section-label">Angefordert werden</div>
+        <div id="requestsList" class="stack-sm"></div>
+        <div id="emptyHint" class="muted" style="font-size:13px;">Noch nichts hinzugefügt.</div>
+      </div>
+
+      {# ---- Footer ---- #}
+      <div class="between">
+        <a class="text-action" href="{{ url_for('advisor_dashboard.advisor_dashboard') }}">Abbrechen</a>
+        <span id="submitInert" class="state-label">Keine Positionen</span>
+        <button type="submit" id="submitBtn" class="btn btn-primary" style="display:none;">0 Positionen anfordern</button>
+      </div>
     </div>
-    <div class="content">
-        <h2>Request More Documents for Tax Year {{ year }}</h2>
-        <form method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="user_id" value="{{ user_id }}">
-            
-            <!-- Input for a new document request -->
-            <div>
-                <input type="text" id="documentRequestInput" placeholder="Enter document request">
-                <button type="button" class="button-blue" id="addRequestButton">Add</button>
-            </div>
-            
-            <!-- List to display added requests -->
-            <ul id="requestsList"></ul>
-            
-            <!-- Container for hidden inputs that will be submitted -->
-            <div id="hiddenInputs"></div>
-            
-            <!-- Final submit button -->
-            <button type="submit" class="button-blue">Submit Requests</button>
-        </form>
-    </div>
-    
-    <script>
-        document.getElementById('addRequestButton').addEventListener('click', function() {
-            var input = document.getElementById('documentRequestInput');
-            var value = input.value.trim();
-            if(value) {
-                // Create a list item for visual feedback
-                var li = document.createElement('li');
-                li.textContent = value;
-                document.getElementById('requestsList').appendChild(li);
-                
-                // Create a hidden input so the value is submitted with the form
-                var hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'requests';
-                hiddenInput.value = value;
-                document.getElementById('hiddenInputs').appendChild(hiddenInput);
-                
-                // Clear the input for the next request
-                input.value = '';
-            }
-        });
-    </script>
-</body>
-</html>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var input      = document.getElementById('documentRequestInput');
+    var addBtn     = document.getElementById('addRequestButton');
+    var list       = document.getElementById('requestsList');
+    var emptyHint  = document.getElementById('emptyHint');
+    var submitBtn  = document.getElementById('submitBtn');
+    var submitInert = document.getElementById('submitInert');
+
+    function refresh() {
+      var count = list.children.length;
+      emptyHint.style.display = count ? 'none' : '';
+      if (count) {
+        submitInert.style.display = 'none';
+        submitBtn.style.display = '';
+        submitBtn.textContent = count + (count === 1 ? ' Position anfordern' : ' Positionen anfordern');
+      } else {
+        submitInert.style.display = '';
+        submitBtn.style.display = 'none';
+      }
+    }
+
+    function addRequest() {
+      var value = input.value.trim();
+      if (!value) return;
+
+      var row = document.createElement('div');
+      row.className = 'card-sm between';
+      row.style.border = '1px solid var(--hairline)';
+
+      var label = document.createElement('span');
+      label.style.fontSize = '14px';
+      label.textContent = value;
+
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'requests';
+      hidden.value = value;
+
+      var remove = document.createElement('span');
+      remove.className = 'text-action';
+      remove.style.fontSize = '18px';
+      remove.style.lineHeight = '1';
+      remove.textContent = '×';
+      remove.addEventListener('click', function () {
+        list.removeChild(row);
+        refresh();
+      });
+
+      row.appendChild(label);
+      row.appendChild(remove);
+      row.appendChild(hidden);
+      list.appendChild(row);
+
+      input.value = '';
+      input.focus();
+      refresh();
+    }
+
+    addBtn.addEventListener('click', addRequest);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addRequest(); }
+    });
+
+    refresh();
+  })();
+</script>
+{% endblock %}

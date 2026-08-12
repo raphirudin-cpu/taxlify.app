@@ -26,7 +26,7 @@ def advisor_dashboard():
             advisor_ids = [m.advisor_id for m in tm]
         else:
             # Advisor role user not linked to a company
-            flash("You are not linked to a company yet, please contact your manager", "error")
+            flash("Du bist noch keiner Firma zugeordnet. Bitte wende dich an deine Leitung.", "error")
 
     # Fetch tax years for this advisor_id
     rows = []
@@ -144,12 +144,12 @@ def add_statistic():
     paid_taxes     = request.form.get('paid_taxes')
 
     if user_id is None or not date_str:
-        flash("Missing or invalid data.", "error")
+        flash("Fehlende oder ungültige Daten.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
     try:
         parsed_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
-        flash("Invalid date.", "error")
+        flash("Ungültiges Datum.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     # Advisors may only write statistics for clients they are engaged with.
@@ -176,7 +176,7 @@ def add_statistic():
         db.session.add(new_stat)
 
     if commit_or_rollback():
-        flash("Statistic saved!", "success")
+        flash("Zahlen gespeichert.", "success")
     else:
-        flash("Error saving statistic.", "error")
+        flash("Fehler beim Speichern der Zahlen.", "error")
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))

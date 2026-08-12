@@ -15,7 +15,7 @@ def advisor_quotes():
     if not advisor_record:
         if current_user.role == 'admin':
             return redirect(url_for('admin_settings.advisor_settings'))
-        flash("You are not part of an Advisor Company yet, reach out to your manager.", "error")
+        flash("Du gehörst noch keiner Treuhandfirma an. Bitte wende dich an deine Leitung.", "error")
         return render_template('advisor_quotes.html',
                                accepted_quotes=[], submitted_quotes=[], quote_requests=[])
 
@@ -101,11 +101,11 @@ def download_quote_file(quote_id):
     # check advisor permission
     advisor_record = current_advisor()
     if not advisor_record or quote.advisor_id != advisor_record.id:
-        flash("Access denied.", "danger")
+        flash("Zugriff verweigert.", "danger")
         return redirect(url_for('advisor_quotes.advisor_quotes'))
 
     if not quote.file_path or not os.path.isfile(quote.file_path):
-        flash("File not found.", "error")
+        flash("Datei nicht gefunden.", "error")
         return redirect(url_for('advisor_quotes.advisor_quotes'))
 
     return send_file(quote.file_path, as_attachment=True)

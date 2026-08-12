@@ -1,9 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Advisor Settings</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <style>
+{% extends "app_base.html" %}
+{% block title %}Advisor Settings · Taxlify{% endblock %}
+
+{% block head %}
+<style>
         /* Your existing styles */
         .form-group {
             margin-bottom: 15px;
@@ -20,14 +19,14 @@
         }
         .form-group button {
             padding: 10px 20px;
-            background-color: #007BFF;
+            background-color: var(--primary);
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
         .form-group button:hover {
-            background-color: #0056b3;
+            background-color: var(--primary-hover);
         }
         .success {
             color: green;
@@ -59,32 +58,10 @@
             background-color: #f2f2f2;
         }
     </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-        {% if current_user.role == 'admin' %}
-          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-        {% endif %}
-        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-    </div>
-    
-    <div class="content">
-        <h2>Settings</h2>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% endblock %}
+
+{% block content %}
+        <div class="page-header"><h1>Settings</h1></div>
         <form action="" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="form-group">
@@ -114,8 +91,8 @@
             <div class="form-group">
                 <button type="submit" name="update_settings">Save Settings</button>
             </div>
-        </form>        
-        
+        </form>
+
         {% if advisor and advisor.logo %}
         <div class="logo-preview">
             <label>Current Logo:</label>
@@ -128,7 +105,7 @@
             </form>
         </div>
         {% endif %}
-        
+
         <h2>Team Members</h2>
         <!-- Add Member Form -->
         <form action="" method="post">
@@ -161,7 +138,4 @@
             </tr>
             {% endfor %}
         </table>
-
-    </div>
-</body>
-</html>
+{% endblock %}

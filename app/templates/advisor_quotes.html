@@ -1,228 +1,130 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Advisor — Quotes</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <!-- Select2 CSS -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .content { padding: 20px; }
-    .filter-bar { margin-bottom: 20px; }
-    .filter-bar input, .filter-bar select { margin-right:10px; padding:5px; }
-    .accepted-quotes-table, .submitted-quotes-table, .quote-requests-table {
-      width: 100%; border-collapse: collapse;
-    }
-    .accepted-quotes-table th, .accepted-quotes-table td,
-    .submitted-quotes-table th, .submitted-quotes-table td,
-    .quote-requests-table th, .quote-requests-table td {
-      border: 1px solid #ddd; padding: 8px;
-    }
-    .accepted-quotes-table th,
-    .submitted-quotes-table th,
-    .quote-requests-table th {
-      background-color: #007BFF; color: white; text-align: left;
-    }
-  </style>
-</head>
-<body>
-  <div class="navbar">
-    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-    <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-    {% if current_user.role == 'admin' %}
-      <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-      <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-      <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-      <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-      <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-    {% endif %}
-    <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-  </div>
+{% extends "app_base.html" %}
+{% block title %}Offerten · Taxlify{% endblock %}
+{% block topbar_title %}Offerten{% endblock %}
+{% block subtitle %}<span class="subtitle">{{ quote_requests|length }} offene Anfragen</span>{% endblock %}
 
-  <div class="content">
-    <h2>Quotes Dashboard</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+{% block content %}
+<div class="two-col" style="grid-template-columns:1fr 360px;">
 
-    <!-- Filters -->
-    <div class="filter-bar">
-      <input type="text" id="clientSearch" placeholder="Search by Customer Name">
-      <select id="yearFilter" class="select2">
-        <option value="">All Years</option>
-        {% set accepted_years = accepted_quotes|map(attribute='tax_year')|list %}
-        {% set submitted_years = submitted_quotes|map(attribute='tax_year')|list %}
-        {% set request_years = quote_requests|map(attribute='tax_year')|list %}
-        {% set all_years = (accepted_years + submitted_years + request_years) | unique | sort(reverse=true) %}
-        {% for y in all_years %}
-          <option value="{{ y }}">{{ y }}</option>
-        {% endfor %}
-      </select>
-    </div>
+  {# ---- Left: Anfragen + Gesendet ---- #}
+  <div class="stack">
 
-    <h3>Accepted Quotes</h3>
-    <table class="accepted-quotes-table">
-      <thead>
-        <tr>
-          <th>Customer</th><th>Year</th><th>Amount</th><th>Deadline</th><th>Accepted</th><th>Download</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for q in accepted_quotes %}
-        <tr>
-          <td>{{ q.name }} {{ q.surname }}</td>
-          <td>{{ q.tax_year }}</td>
-          <td>{{ q.quote_amount }}</td>
-          <td>{{ q.deadline.strftime('%Y-%m-%d') }}</td>
-          <td>{{ q.accepted_on}}</td>
-          <td>
-            {% if q.file_path %}
-              <a href="{{ url_for('advisor_quotes.download_quote_file', quote_id=q.id) }}" class="button-blue" target="_blank">Download</a>
-            {% else %}
-              N/A
-            {% endif %}
-          </td>          
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <h3>Submitted Quotes (In Review)</h3>
-    <table class="submitted-quotes-table">
-      <thead>
-        <tr>
-          <th>Customer</th><th>Year</th><th>Status</th><th>Amount</th><th>Submitted On</th><th>Download</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for q in submitted_quotes %}
-        <tr>
-          <td>{{ q.name }} {{ q.surname }}</td>
-          <td>{{ q.tax_year }}</td>
-          <td>{{ q.quote_status }}</td>
-          <td>{{ q.quote_amount }}</td>
-          <td>{% if q.submitted_on %}{{ q.submitted_on.strftime('%Y-%m-%d') }}{% else %}N/A{% endif %}</td>
-          <td>
-            {% if q.file_path %}
-              <a href="{{ url_for('advisor_quotes.download_quote_file', quote_id=q.id) }}" class="button-blue" target="_blank">Download</a>
-            {% else %}
-              N/A
-            {% endif %}
-          </td>          
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <h3>Quote Requests (Pending)</h3>
-    <table class="quote-requests-table">
-      <thead>
-        <tr>
-          <th>Customer</th><th>Year</th><th>Checklist</th><th>Actions</th><th>Requested On</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for rq in quote_requests %}
-        <tr>
-          <td>{{ rq.name }} {{ rq.surname }}</td>
-          <td>{{ rq.tax_year }}</td>
-          <td>
-            <form action="{{ url_for('view_checklist.view_checklist', year=rq.tax_year) }}" method="get">
-              <input type="hidden" name="user_id" value="{{ rq.user_id }}">
-              <button class="button-blue">View Checklist</button>
-            </form>
-          </td>
-          <td>
-            <button class="button-blue"
-                    onclick="openQuoteModal('{{ rq.id }}','{{ rq.user_id }}','{{ rq.tax_year }}')">
-              Submit
-            </button>
-            <form action="{{ url_for('reject_quote.reject_quote') }}" method="post" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <input type="hidden" name="id" value="{{ rq.id }}">
-              <input type="hidden" name="user_id" value="{{ rq.user_id }}">
-              <input type="hidden" name="tax_year" value="{{ rq.tax_year }}">
-              <button class="button-blue">Reject</button>
-            </form>
-          </td>
-          <td>{{ rq.created_at.strftime('%Y-%m-%d') }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <!-- Submit Quote Modal -->
-    <div id="quoteModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeQuoteModal()">&times;</span>
-        <h2>Submit Quote</h2>
-        <form id="quoteForm" action="{{ url_for('submit_quote.submit_quote') }}"
-              method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <input type="hidden" name="id" id="quote_id">
-          <input type="hidden" name="user_id" id="user_id">
-          <input type="hidden" name="tax_year" id="tax_year">
-          <div class="form-group">
-            <label for="quote_amount">Quote Amount:</label>
-            <input type="number" name="quote_amount" id="quote_amount" required>
-          </div>
-          <div class="form-group">
-            <label for="comment">Comment:</label>
-            <textarea name="comment" id="comment" rows="4"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="file">Upload Document:</label>
-            <input type="file" name="file" id="file">
-          </div>
-          <div class="form-group">
-            <button type="submit" class="button-blue">Submit</button>
-          </div>
-        </form>
+    {# Anfragen #}
+    <div class="card" style="padding:0;">
+      <div class="card-head between">
+        <span>Anfragen</span>
+        <span class="muted" style="font-weight:500;">{{ quote_requests|length }} offen</span>
       </div>
+      {% for rq in quote_requests %}
+      <div class="trow" style="grid-template-columns:1fr 80px 140px 200px;">
+        <div class="cell-strong">{{ rq.name }} {{ rq.surname }}</div>
+        <div class="cell-muted tnum">{{ rq.tax_year }}</div>
+        <div class="cell-muted quote-age" data-created="{{ rq.created_at.isoformat() if rq.created_at else '' }}">—</div>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <form action="{{ url_for('view_checklist.view_checklist', year=rq.tax_year) }}" method="get" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ rq.user_id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Checkliste</button>
+          </form>
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="openQuoteModal('{{ rq.id }}','{{ rq.user_id }}','{{ rq.tax_year }}','{{ rq.name }} {{ rq.surname }}')">Offerte</button>
+        </div>
+      </div>
+      {% else %}
+      <div class="trow" style="grid-template-columns:1fr;"><div class="cell-muted">Keine offenen Anfragen.</div></div>
+      {% endfor %}
     </div>
+
+    {# Gesendet #}
+    <div class="card" style="padding:0;">
+      <div class="card-head">Gesendet</div>
+      {% for q in submitted_quotes %}
+      <div class="trow" style="grid-template-columns:1fr 80px 120px 160px;">
+        <div class="cell-strong">{{ q.name }} {{ q.surname }}</div>
+        <div class="cell-muted tnum">{{ q.tax_year }}</div>
+        <div class="tnum">{{ q.quote_amount|chf_amount }}</div>
+        <div class="right"><span class="cell-muted">{{ q.quote_status|status_de }}</span></div>
+      </div>
+      {% endfor %}
+      {% for q in accepted_quotes %}
+      <div class="trow" style="grid-template-columns:1fr 80px 120px 160px;">
+        <div class="cell-strong">{{ q.name }} {{ q.surname }}</div>
+        <div class="cell-muted tnum">{{ q.tax_year }}</div>
+        <div class="tnum">{{ q.quote_amount|chf_amount }}</div>
+        <div class="right"><span class="pill success">{{ q.quote_status|status_de }}</span></div>
+      </div>
+      {% endfor %}
+      {% if not submitted_quotes and not accepted_quotes %}
+      <div class="trow" style="grid-template-columns:1fr;"><div class="cell-muted">Noch keine Offerten versendet.</div></div>
+      {% endif %}
+    </div>
+
   </div>
 
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-  <script>
-    $(function(){
-      // Initialize filters
-      $('#yearFilter').select2({ placeholder:'Select Year', allowClear:true, width:'resolve' });
-      $('#clientSearch').on('input', filterTables);
-      $('#yearFilter').on('change', filterTables);
+  {# ---- Right: Compose panel ---- #}
+  <div class="card" style="position:sticky; top:24px;">
+    <div class="eyebrow" style="margin-bottom:6px;">Offerte erstellen</div>
+    <div class="card-title" id="composeTitle" style="margin-bottom:20px;">
+      {% if quote_requests %}Offerte für {{ quote_requests[0].name }} {{ quote_requests[0].surname }}{% else %}Wähle eine Anfrage{% endif %}
+    </div>
 
-      function filterTables(){
-        var nameF = $('#clientSearch').val().toLowerCase();
-        var yearF = $('#yearFilter').val();
-        $('.accepted-quotes-table tbody tr, .submitted-quotes-table tbody tr, .quote-requests-table tbody tr').each(function(){
-          var $row = $(this);
-          var nm = $row.find('td:eq(0)').text().toLowerCase();
-          var yr = $row.find('td:eq(1)').text();
-          var okName = !nameF || nm.indexOf(nameF) !== -1;
-          var okYear = !yearF || yr === yearF;
-          $row.toggle(okName && okYear);
-        });
-      }
+    <form id="quoteForm" action="{{ url_for('submit_quote.submit_quote') }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="id" id="quote_id" value="{{ quote_requests[0].id if quote_requests else '' }}">
+      <input type="hidden" name="user_id" id="user_id" value="{{ quote_requests[0].user_id if quote_requests else '' }}">
+      <input type="hidden" name="tax_year" id="tax_year" value="{{ quote_requests[0].tax_year if quote_requests else '' }}">
 
-      // Modal logic
-      window.openQuoteModal = function(qid, uid, year){
-        $('#quote_id').val(qid);
-        $('#user_id').val(uid);
-        $('#tax_year').val(year);
-        $('#quoteModal').show();
-      };
-      window.closeQuoteModal = function(){ $('#quoteModal').hide(); };
-      $(window).on('click', function(e){ if (e.target.id === 'quoteModal') closeQuoteModal(); });
-      $('.close').on('click', closeQuoteModal);
-    });
-  </script>
-</body>
-</html>
+      <div class="field">
+        <label for="quote_amount">Betrag (CHF)</label>
+        <input type="number" step="0.01" name="quote_amount" id="quote_amount" required
+               placeholder="0" class="tnum" style="height:44px; font-size:20px; font-weight:600;">
+      </div>
+
+      <div class="field">
+        <label for="comment">Kommentar</label>
+        <textarea name="comment" id="comment" rows="4" style="resize:none;"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Dokument</label>
+        <label for="file" style="display:flex; align-items:center; justify-content:center; text-align:center;
+               min-height:72px; padding:18px; border:1px dashed var(--border-strong); border-radius:8px;
+               cursor:pointer; color:var(--muted); font-size:13px;">
+          <span id="fileLabel">Dokument anhängen</span>
+          <input type="file" name="file" id="file" style="display:none;">
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="height:42px;">Offerte senden</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openQuoteModal(qid, uid, year, name){
+    document.getElementById('quote_id').value = qid;
+    document.getElementById('user_id').value = uid;
+    document.getElementById('tax_year').value = year;
+    document.getElementById('composeTitle').textContent = 'Offerte für ' + name;
+    document.getElementById('quote_amount').focus();
+  }
+
+  // File-name feedback in the dashed zone
+  document.getElementById('file').addEventListener('change', function(){
+    document.getElementById('fileLabel').textContent = this.files.length ? this.files[0].name : 'Dokument anhängen';
+  });
+
+  // "seit N Tagen" age labels
+  document.querySelectorAll('.quote-age').forEach(function(el){
+    var iso = el.dataset.created;
+    if(!iso){ el.textContent = '—'; return; }
+    var days = Math.floor((Date.now() - Date.parse(iso)) / 86400000);
+    if(isNaN(days)){ el.textContent = '—'; }
+    else if(days <= 0){ el.textContent = 'heute'; }
+    else if(days === 1){ el.textContent = 'seit 1 Tag'; }
+    else { el.textContent = 'seit ' + days + ' Tagen'; }
+  });
+</script>
+{% endblock %}

@@ -1,124 +1,95 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>View Additional Documents</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f8f9fa;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar {
-            background-color: #007BFF;
-            padding: 15px;
-            text-align: center;
-        }
-        .navbar a {
-            color: white;
-            margin: 0 15px;
-            text-decoration: none;
-        }
-        .navbar a:hover {
-            text-decoration: underline;
-        }
-        .content {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .button-blue {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
-            color: white;
-            background-color: #007BFF;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            text-decoration: none;
-        }
-        .button-blue:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-        {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
+{% extends "app_base.html" %}
+{% block title %}Dokumente prüfen · Taxlify{% endblock %}
+{% block topbar_title %}Dokumente prüfen{% endblock %}
+{% block subtitle %}<span class="subtitle">Zusätzliche Dokumente · Steuerjahr {{ tax_year.year }}</span>{% endblock %}
+
+{% block content %}
+<a class="back-link" href="{{ url_for('advisor_dashboard.advisor_dashboard') }}">← Zurück zum Arbeitsvorrat</a>
+
+<div class="two-col" style="grid-template-columns:1fr 340px; gap:24px;">
+
+  {# ---- Left: additional documents ---- #}
+  <div>
+    <div class="dtable">
+      <div class="card-head between">
+        <span>Zusätzliche Dokumente</span>
+        {% if additional_documents|length > 0 %}
+        <form method="post" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="user_id" value="{{ tax_year.user_id }}">
+          <button type="submit" name="download_all" class="btn btn-secondary btn-sm">Alle herunterladen</button>
+        </form>
         {% endif %}
-        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+      </div>
+
+      {% if additional_documents|length == 0 %}
+        <div class="empty">Keine Dokumente hochgeladen.</div>
+      {% else %}
+        <div class="thead" style="grid-template-columns:70px 1fr 170px 120px;">
+          <div>ID</div><div>Dokument</div><div>Hochgeladen am</div><div class="right">Download</div>
+        </div>
+        {% for document in additional_documents %}
+        <div class="trow" style="grid-template-columns:70px 1fr 170px 120px;">
+          <div class="cell-muted tnum">{{ document.id }}</div>
+          <div>
+            {% if document.file_path %}
+              <span class="cell-strong">{{ document.file_path.split('/')[-1] }}</span>
+            {% else %}
+              <span class="cell-strong">{{ document.request_text }}</span>
+              <span class="cell-muted"> — noch nicht hochgeladen</span>
+            {% endif %}
+          </div>
+          <div class="cell-muted">{{ document.uploaded_on|date_ch }}</div>
+          <div class="right">
+            {% if document.file_path %}
+              <a class="text-action" href="{{ url_for('additional_documents.view_additional_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Herunterladen</a>
+            {% else %}
+              <span class="cell-muted">—</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
     </div>
-    <div class="content">
-        <h2>Additional Documents for Tax Year {{ tax_year.year }}</h2>
-        {% if additional_documents|length == 0 %}
-            <p>No additional documents uploaded.</p>
-        {% else %}
-            <form method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="user_id" value="{{ tax_year.user_id }}">
-                <button type="submit" name="download_all" class="button-blue">Download All</button>
-            </form>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Document ID</th>
-                        <th>Document Name</th>
-                        <th>Uploaded On</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for document in additional_documents %}
-                    <tr>
-                        <td>{{ document.id }}</td>
-                        <td>
-                          {% if document.file_path %}
-                            {{ document.file_path.split('/')[-1] }}
-                          {% else %}
-                            Pending upload
-                          {% endif %}
-                        </td>
-                        <td>{{ document.uploaded_on }}</td>
-                        <td>
-                          {% if document.file_path %}
-                            <a class="button-blue" href="{{ url_for('additional_documents.view_additional_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Download</a>
-                          {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
+  </div>
+
+  {# ---- Right: decision + client ---- #}
+  <div class="stack">
+    <div class="card">
+      <div class="section-label">Entscheid</div>
+      <form method="post" action="{{ url_for('documents_action.documents_action') }}" style="margin:0 0 10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="user_id" value="{{ tax_year.user_id }}">
+        <input type="hidden" name="tax_year_id" value="{{ tax_year.year }}">
+        <input type="hidden" name="action" value="accept">
+        <button class="btn btn-primary btn-block" type="submit">Dokumente freigeben</button>
+      </form>
+      <a class="btn btn-secondary btn-block" href="{{ url_for('request_more_documents.set_customer', customer_id=tax_year.user_id, year=tax_year.year) }}">Mehr anfordern</a>
     </div>
-</body>
-</html>
+
+    <div class="card">
+      <div class="section-label">Kundin</div>
+      <div class="stack-sm" style="gap:12px;">
+        <div class="between">
+          <span class="muted" style="font-size:13px;">Kundenprofil</span>
+          <a class="text-action" href="{{ url_for('admin_clients.client_profile', user_id=tax_year.user_id) }}">Öffnen</a>
+        </div>
+        <div class="between">
+          <span class="muted" style="font-size:13px;">Steuerjahr</span>
+          <span style="font-size:14px; font-weight:500;" class="tnum">{{ tax_year.year }}</span>
+        </div>
+        <div class="between">
+          <span class="muted" style="font-size:13px;">Frist</span>
+          <span class="pill">{{ tax_year.deadline|date_ch }}</span>
+        </div>
+        <div class="between">
+          <span class="muted" style="font-size:13px;">Status</span>
+          <span style="font-size:14px;">{{ tax_year.status|status_de }}</span>
+        </div>
+      </div>
+      <a class="btn btn-secondary btn-block" style="margin-top:16px;" href="{{ url_for('view_checklist.view_checklist', year=tax_year.year, user_id=tax_year.user_id) }}">Checkliste ansehen</a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,62 +1,21 @@
-{# templates/view_feedback.html #}
+{# view_feedback.html — AJAX fragment injected into a modal container (advisor dashboard). Renders modal inner content only. #}
 
-<style>
-  .feedback-header {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-    color: #007BFF;
-  }
-  .feedback-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .feedback-item {
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 15px;
-    margin-bottom: 10px;
-  }
-  .feedback-rating {
-    font-size: 1.1rem;
-    color: #FFD700;
-    margin-bottom: 8px;
-  }
-  .feedback-comment {
-    font-size: 1rem;
-    margin-bottom: 8px;
-    color: #333;
-  }
-  .feedback-date {
-    font-size: 0.85rem;
-    color: #666;
-    text-align: right;
-  }
-  .no-feedback {
-    text-align: center;
-    color: #555;
-    font-style: italic;
-    padding: 20px 0;
-  }
-</style>
-
-<div class="feedback-header">Feedback for Tax Year {{ tax_year }}</div>
+<div style="margin-bottom:20px;">
+  <div style="font-size:18px; font-weight:600; color:#131211;">Bewertungen · Steuerjahr {{ tax_year }}</div>
+  {% if client_name %}<div style="font-size:13px; color:#7A776F; margin-top:4px;">{{ client_name }}</div>{% endif %}
+</div>
 
 {% if feedbacks %}
-  <ul class="feedback-list">
-    {% for f in feedbacks %}
-      <li class="feedback-item">
-        <div class="feedback-rating">
-          {%- for i in range(f.rating|int) -%}★{%- endfor -%}
-          {%- for i in range(5 - (f.rating|int)) -%}☆{%- endfor -%}
-          <span style="font-weight: normal; color: #333;"> {{ f.rating }}/5</span>
-        </div>
-        <div class="feedback-comment">{{ f.comment }}</div>
-        <div class="feedback-date">submitted on {{ f.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
-      </li>
-    {% endfor %}
-  </ul>
+  {% for f in feedbacks %}
+  <div style="background:#FBFAF8; border:1px solid #E5E3DE; border-radius:8px; padding:16px; margin-bottom:12px;">
+    <div style="display:flex; align-items:baseline; gap:8px;">
+      <span style="font-size:15px; color:#131211; letter-spacing:1px;">{% for i in range(f.rating|int) %}★{% endfor %}{% for i in range(5 - (f.rating|int)) %}☆{% endfor %}</span>
+      <span class="tnum" style="font-size:13px; color:#5A5751;">{{ f.rating }}/5</span>
+    </div>
+    {% if f.comment %}<div style="font-size:14px; color:#131211; margin-top:8px;">{{ f.comment }}</div>{% endif %}
+    <div class="tnum" style="font-size:12px; color:#7A776F; text-align:right; margin-top:8px;">eingereicht am {{ f.created_at|datetime_ch }}</div>
+  </div>
+  {% endfor %}
 {% else %}
-  <div class="no-feedback">No feedback for this year.</div>
+  <div style="font-size:14px; color:#7A776F; text-align:center; padding:24px 0;">Keine Bewertung für dieses Jahr.</div>
 {% endif %}

@@ -1,5 +1,6 @@
 import os
-from flask import Flask
+from flask import Flask, redirect, url_for
+from flask_login import current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -36,9 +37,34 @@ def create_app(config_class=None):
     # Ensure models are imported so Flask-Migrate can see them.
     from app import models  # noqa: F401
 
+    # German (Swiss) render-time filters: status_de, date_ch, chf, ...
+    from app.i18n import register_filters
+    register_filters(app)
+
+    @app.context_processor
+    def inject_nav():
+        """Latest tax year for a client, for the sidebar's year-scoped links."""
+        year = None
+        try:
+            if current_user.is_authenticated and current_user.role == 'user':
+                ty = (models.TaxYear.query
+                      .filter_by(user_id=current_user.id)
+                      .order_by(models.TaxYear.year.desc()).first())
+                if ty:
+                    year = ty.year
+        except Exception:
+            year = None
+        return {'nav_year': year}
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(models.User, int(user_id))
+
+    @app.route('/')
+    def index():
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard.dashboard'))
+        return redirect(url_for('auth.login'))
 
     # === Register Blueprints ===
     from app.routes.auth_routes import auth_bp

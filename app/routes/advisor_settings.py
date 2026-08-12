@@ -39,7 +39,7 @@ def advisor_settings():
                     User.id != user.id
                 ).first()
                 if exists:
-                    flash("Email already in use.", "error")
+                    flash("E-Mail-Adresse wird bereits verwendet.", "error")
                     return redirect(url_for('advisor_settings.advisor_settings'))
 
             # Apply updates
@@ -57,9 +57,9 @@ def advisor_settings():
             user.notify_deadline       = notify_deadline
 
             if commit_or_rollback():
-                flash("Settings updated successfully.", "success")
+                flash("Einstellungen erfolgreich aktualisiert.", "success")
             else:
-                flash("Error updating settings.", "error")
+                flash("Fehler beim Aktualisieren der Einstellungen.", "error")
 
         # 2) PASSWORD CHANGE
         elif 'change_password' in request.form:
@@ -69,25 +69,25 @@ def advisor_settings():
 
             # Verify current password
             if not check_password_hash(user.password, old_pw):
-                flash("Current password is incorrect.", "error")
+                flash("Das aktuelle Passwort ist nicht korrekt.", "error")
                 return redirect(url_for('advisor_settings.advisor_settings'))
 
             # Confirm new passwords match
             if new_pw != confirm_pw:
-                flash("New passwords do not match.", "error")
+                flash("Die neuen Passwörter stimmen nicht überein.", "error")
                 return redirect(url_for('advisor_settings.advisor_settings'))
 
             # Enforce a minimum length (optional)
             if len(new_pw) < 8:
-                flash("New password must be at least 8 characters long.", "error")
+                flash("Das neue Passwort muss mindestens 8 Zeichen lang sein.", "error")
                 return redirect(url_for('advisor_settings.advisor_settings'))
 
             # Hash & save
             user.password = generate_password_hash(new_pw)
             if commit_or_rollback():
-                flash("Password changed successfully.", "success")
+                flash("Passwort erfolgreich geändert.", "success")
             else:
-                flash("Error changing password.", "error")
+                flash("Fehler beim Ändern des Passworts.", "error")
 
         # After either action, reload to show flashes
         return redirect(url_for('advisor_settings.advisor_settings'))

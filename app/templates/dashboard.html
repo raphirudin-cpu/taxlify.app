@@ -1,460 +1,192 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .success, .error {
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .tax-years-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .tax-years-table th, .tax-years-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        .tax-years-table th {
-            background-color: #007BFF;
-            color: white;
-            text-align: left;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group button {
-            padding: 10px;
-            box-sizing: border-box;
-        }
-        .overdue {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .due-soon {
-            background-color: orange;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .on-time {
-            background-color: green;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
+{% extends "app_base.html" %}
+{% block title %}Übersicht · Taxlify{% endblock %}
+{% block topbar_title %}Übersicht{% endblock %}
+{% block subtitle %}<span class="subtitle">{{ kpis.open_count }} offene Steuerjahre</span>{% endblock %}
 
-    </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('settings.settings') }}">Settings</a>
-        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-    </div>
+{% block actions %}
+  <button class="btn btn-primary" onclick="openModal('newYearModal')">Neues Steuerjahr</button>
+{% endblock %}
 
-    <div class="content">
-        <h2>Dashboard</h2>
-
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <button onclick="document.getElementById('openTaxYearForm').style.display='block'">Open Tax Year</button>
-
-        <div id="openTaxYearForm" style="display:none;">
-            <h3>Open Tax Year</h3>
-            <form action="{{ url_for('dashboard.dashboard') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div class="form-group">
-                    <label for="year">Year:</label>
-                    <input type="number" id="year" name="year" min="2000" max="2099" required>
-                </div>
-                <div class="form-group">
-                    <label for="deadline">Deadline:</label>
-                    <input type="date" id="deadline" name="deadline" required>
-                </div>
-                <div class="form-group">
-                    <button type="submit" name="open_tax_year">Open Tax Year</button>
-                </div>
-            </form>
-        </div>
-
-        <h3>Open Tax Years</h3>
-        <table class="tax-years-table">
-            <tr>
-                <th>Year</th>
-                <th>Status</th>
-                <th>Deadline</th>
-                <th>Advisor</th>
-                <th>Checklist</th>
-                <th>Documents</th>
-                <th>Tax Return</th>
-            </tr>
-            {% for tax_year in tax_years if tax_year.status != 'Completed' %}
-                <tr>
-                    <td>{{ tax_year.year }}</td>
-                    <td>{{ tax_year.status }}</td>
-                    <td>
-                        <button class="{% if tax_year.deadline < today %}overdue{% elif tax_year.deadline <= three_months %}due-soon{% else %}on-time{% endif %}">
-                            {{ tax_year.deadline }}
-                        </button>
-                    </td>                    
-                    <td>
-                        {% set quote = requested_quotes.get(tax_year.year) %}
-                        {% if quote and quote.quote_status == "Pending" %}
-                            <button class="button-blue" onclick="withdrawQuote('{{ tax_year.id }}')">
-                                Withdraw Quote
-                            </button>
-                        {% elif tax_year.status == "Review Quote" %}
-                             <button class="button-red" onclick="openReviewQuoteModal('{{ tax_year.id }}', '{{ tax_year.user_id }}', '{{ tax_year.year }}')">
-                                Review Quote
-                             </button>
-                        {% elif (tax_year.status == "Quote accepted" or tax_year.status == "Draft tax return submitted" or tax_year.status == "Draft tax return approved" or tax_year.status == "Documents uploaded" or tax_year.status == "Documents approved" or tax_year.status == "Documents Downloaded" or tax_year.status == "Additional Documents Downloaded" or tax_year.status == "Additional documents uploaded" or tax_year.status == "Additional documents requested") and tax_year.advisor_id %}
-                             <a href="javascript:void(0);" class="advisor-link" onclick="openAdvisorDetails('{{ tax_year.advisor_id }}')">
-                                {% if advisors[tax_year.advisor_id] is defined %}
-                                    {{ advisors[tax_year.advisor_id].name }}
-                                {% else %}
-                                    Advisor #{{ tax_year.advisor_id }}
-                                {% endif %}
-                             </a>
-                        {% elif tax_year.status == "Quote rejected" %}
-                             <a href="{{ url_for('advisor.advisors') }}">Unassigned</a>
-                        {% else %}
-                             <a href="{{ url_for('advisor.advisors') }}">Unassigned</a>
-                        {% endif %}
-                    </td>                                                                      
-                    <td>
-                        {% if not tax_year.checklist_completed %}
-                        <a class="button-red" href="{{ url_for('checklist.checklist', year=tax_year.year) }}">Complete Checklist</a>
-                        {% elif tax_year.checklist_completed %}
-                        <a class="button-blue" href="{{ url_for('view_checklist.view_checklist', year=tax_year.year) }}">View Checklist</a>                  
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if tax_year.additional_documents_request %}
-                            {% if not tax_year.additional_documents_uploaded %}
-                                <a class="button-red" href="{{ url_for('upload_additional_documents.upload_additional_documents', year=tax_year.year) }}">
-                                    Upload Additional Documents
-                                </a>
-                            {% else %}
-                                <button class="button-blue" disabled>Additional Documents Uploaded</button>
-                            {% endif %}
-                        {% elif not tax_year.uploaded_documents and tax_year.checklist_completed %}
-                            <a class="button-red" href="{{ url_for('upload_documents.upload_documents', year=tax_year.year) }}">Upload Documents</a>
-                        {% elif tax_year.uploaded_documents and tax_year.documents_approved %}
-                            <button class="button-blue" disabled>Documents Approved</button>
-                        {% elif tax_year.uploaded_documents %}
-                            <button class="button-blue" disabled>Documents Uploaded</button>
-                        {% elif not tax_year.checklist_completed %}
-                            <button class="button-blue" disabled>Complete Checklist first</button>
-                        {% endif %}
-                    </td>                                                  
-                    <td>
-                        {% if tax_year.draft_tax_return_submitted|int == 1 %}
-                            {% if tax_year.draft_tax_return_approved|int == 1 %}
-                                <button class="button-blue" disabled>Waiting for final tax return from advisor</button>
-                            {% else %}
-                                <form action="{{ url_for('draft_tax_return_action.draft_tax_return_action') }}" method="post" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="hidden" name="tax_year" value="{{ tax_year.year }}">
-                                    <button type="submit" name="action" value="accept" class="button-green">
-                                        Accept Draft Tax Return
-                                    </button>
-                                </form>
-                                <form action="{{ url_for('draft_tax_return_action.draft_tax_return_action') }}" method="post" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="hidden" name="tax_year" value="{{ tax_year.year }}">
-                                    <button type="submit" name="action" value="reject" class="button-red">
-                                        Reject Draft Tax Return
-                                    </button>
-                                </form>
-                                <a class="button-blue" href="{{ url_for('dashboard.download_draft_tax_return', user_id=tax_year.user_id, year=tax_year.year) }}">
-                                    Download Draft Tax Return
-                                </a>
-                            {% endif %}
-                        {% else %}
-                            {% if tax_year.checklist_completed and tax_year.uploaded_documents %}
-                                {% if tax_year.advisor_id %}
-                                    <button class="button-blue" disabled>Waiting for advisor on draft return</button>
-                                {% else %}
-                                    {% if not tax_year.advisor %}
-                                        <a class="button-blue" href="{{ url_for('advisor.advisors') }}">Search for Advisor</a>
-                                    {% else %}
-                                        <button class="button-blue" disabled>Tax Return in progress</button>
-                                    {% endif %}
-                                {% endif %}
-                            {% elif not tax_year.checklist_completed %}
-                                <button class="button-blue" disabled>Complete Checklist first</button>
-                            {% elif not tax_year.uploaded_documents %}
-                                <button class="button-blue" disabled>Upload Documents first</button>
-                            {% endif %}
-                        {% endif %}
-                    </td>                                                                          
-                </tr>
-            {% endfor %}
-        </table>
-
-        <h3>Completed Tax Years</h3>
-        <table class="tax-years-table">
-            <tr>
-                <th>Year</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th>Advisor</th>
-                <th>Tax Return</th>
-                <th>Feedback</th>
-            </tr>
-            {% for tax_year in tax_years if tax_year.status == 'Completed' %}
-                <tr>
-                    <td>{{ tax_year.year }}</td>
-                    <td>{{ tax_year.status }}</td>
-                    <td>{{ tax_year.final_submitted }}</td>
-                    <td>
-                        <a href="javascript:void(0);" class="advisor-link" onclick="openAdvisorDetails('{{ tax_year.advisor_id }}')">
-                            {% if advisors[tax_year.advisor_id] is defined %}
-                                {{ advisors[tax_year.advisor_id].name }}
-                            {% else %}
-                                Advisor #{{ tax_year.advisor_id }}
-                            {% endif %}
-                        </a>                        
-                    </td>
-                    <td>
-                        <a class="button-blue" href="{{ url_for('dashboard.download_final_tax_return', user_id=tax_year.user_id, year=tax_year.year) }}">Download Final Tax Return</a>
-                    </td>
-                    <td>
-                        {% set feedback_key = tax_year.year ~ '_' ~ tax_year.advisor_id %}
-                        {% if feedback_key in feedbacks %}
-                            Feedback submitted on {{ feedbacks[feedback_key] }}
-                        {% else %}
-                        <a class="button-blue" href="javascript:void(0);" onclick="openFeedbackModal('{{ tax_year.advisor_id }}', '{{ tax_year.year }}')">Submit Feedback</a>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-        </table>
-    </div>
-
-    <!-- The Modal for Advisor Details -->
-    <div id="advisorDetailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeAdvisorDetails()">&times;</span>
-            <div id="advisorDetailsContent">
-                <!-- Advisor details will be loaded here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- The Modal for Reviewing Quote -->
-    <div id="reviewQuoteModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeReviewQuoteModal()">&times;</span>
-            <h2>Review Quote</h2>
-            <div id="reviewQuoteContent">
-                <!-- You can load additional information here via AJAX or populate it from hidden fields -->
-            </div>
-            <form id="reviewQuoteActionForm" action="{{ url_for('quote_action.quote_action') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="tax_year" id="review_quote_tax_year">
-                <input type="hidden" name="advisor_id" id="review_quote_advisor_id">
-                <input type="hidden" name="action" id="review_quote_action">
-                <button type="submit" class="button-blue" onclick="setReviewQuoteAction('accept')">Accept</button>
-                <button type="submit" class="button-blue" onclick="setReviewQuoteAction('reject')">Reject</button>
-            </form>
-        </div>
-    </div>
-
-<!-- The Modal for Feedback -->
-<div id="feedbackModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeFeedbackModal()">&times;</span>
-        <h2>Submit Feedback</h2>
-        <form id="feedbackForm" action="{{ url_for('feedback.submit_feedback') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="advisor_id" id="feedback_advisor_id">
-            <input type="hidden" name="tax_year_id" id="feedback_tax_year_id">
-            <div class="form-group">
-                <label for="rating">Rating:</label>
-                <select id="rating" name="rating" required>
-                    <option value="">Select</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="comment">Comment:</label>
-                <textarea id="comment" name="comment" rows="4" required></textarea>
-            </div>
-            <div class="form-group">
-                <button type="submit" class="button-blue">Submit Feedback</button>
-            </div>
-        </form>
-    </div>
+{% block content %}
+{# ---- Next-action hero ---- #}
+<div class="hero" style="margin-bottom:24px;">
+  <div class="h-left">
+    <div class="h-eyebrow">Als Nächstes</div>
+    {% if hero %}
+      <div class="h-title">{{ hero.headline }}</div>
+      <div class="h-sub">{{ hero.sub }}</div>
+    {% else %}
+      <div class="h-title">Alles erledigt.</div>
+      <div class="h-sub">Aktuell ist keine Aktion offen.</div>
+    {% endif %}
+  </div>
+  {% if hero %}<a class="btn-light" href="{{ hero.url }}">{{ hero.cta }}</a>{% endif %}
 </div>
 
-    <script>
-        function openReviewQuoteModal(taxYearId, userId, year) {
-            // Populate the tax_year field
-            document.getElementById('review_quote_tax_year').value = year;
-            
-            // Fetch quote details from the backend using the tax year id
-            fetch(`/quote_details/${taxYearId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('reviewQuoteContent').innerHTML = '<p>Error loading quote details.</p>';
-                    } else {
-                        // Set the advisor_id from the returned data
-                        document.getElementById('review_quote_advisor_id').value = data.advisor_id;
-                        
-                        let content = `<p><strong>Advisor:</strong> ${data.advisor_name}</p>
-                                       <p><strong>Amount:</strong> ${data.amount}</p>
-                                       <p><strong>Comment:</strong> ${data.comment}</p>`;
-                        if (data.file_url) {
-                            content += `<p><strong>Uploaded File:</strong> <a href="${data.file_url}" download>Download File</a></p>`;
-                        }
-                        document.getElementById('reviewQuoteContent').innerHTML = content;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching quote details:', error);
-                    document.getElementById('reviewQuoteContent').innerHTML = '<p>Error loading quote details.</p>';
-                });
-        
-            // Show the modal
-            document.getElementById('reviewQuoteModal').style.display = "block";
-        }
-        
-        function closeReviewQuoteModal() {
-            document.getElementById('reviewQuoteModal').style.display = "none";
-        }
-        
-        function setReviewQuoteAction(action) {
-            document.getElementById('review_quote_action').value = action;
-        }
-        
-        // Close modal if user clicks outside of it
-        window.onclick = function(event) {
-            var modal = document.getElementById('reviewQuoteModal');
-            if (event.target == modal) {
-                closeReviewQuoteModal();
-            }
-        }
+{# ---- KPI row ---- #}
+<div class="kpi-grid" style="margin-bottom:28px;">
+  <div class="kpi"><div class="k-label">Offene Steuerjahre</div><div class="k-num">{{ kpis.open_count }}</div></div>
+  <div class="kpi"><div class="k-label">Nächste Frist</div><div class="k-num" style="font-size:20px;">{{ kpis.next_deadline|date_ch }}</div></div>
+  <div class="kpi"><div class="k-label">Dokumente</div><div class="k-num">{{ kpis.docs_uploaded }} <span class="den">/ {{ kpis.docs_total }}</span></div></div>
+  <div class="kpi"><div class="k-label">Steuern {{ kpis.tax_year_label or '' }}</div><div class="k-num">{% if kpis.tax_paid is not none %}{{ kpis.tax_paid|chf }}{% else %}—{% endif %}</div></div>
+</div>
 
-        function openFeedbackModal(advisorId, taxYearId) {
-        document.getElementById('feedback_advisor_id').value = advisorId;
-        document.getElementById('feedback_tax_year_id').value = taxYearId;
-        document.getElementById('feedbackModal').style.display = "block";
-    }
+{# ---- Offene Steuerjahre ---- #}
+<div class="section-label">Offene Steuerjahre</div>
+<div class="stack">
+{% for c in year_cards %}
+  <div class="card">
+    <div class="between" style="align-items:flex-start;">
+      <div style="display:flex; align-items:baseline; gap:16px;">
+        <div style="font-size:34px; font-weight:600; letter-spacing:-0.03em;" class="tnum">{{ c.year }}</div>
+        <div>
+          <div style="font-size:14px; font-weight:500;">{{ c.status|status_de }}</div>
+          <div class="muted" style="font-size:13px;">
+            {% if c.advisor_name %}{{ c.advisor_name }} · {{ c.advisor_city }}{% else %}Noch kein Treuhänder{% endif %}
+            {% if c.awaiting_decision and c.quote_amount is not none %} · Offerte {{ c.quote_amount|chf_amount }}{% endif %}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span class="pill {{ c.urgency }}">Frist {{ c.deadline|date_ch }}</span>
+        {% if c.awaiting_decision %}
+          <form method="post" action="{{ url_for('quote_action.quote_action') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="tax_year" value="{{ c.year }}">
+            <input type="hidden" name="advisor_id" value="{{ c.quote_advisor_id }}">
+            <input type="hidden" name="action" value="reject">
+            <button class="btn btn-secondary btn-sm" type="submit">Ablehnen</button>
+          </form>
+          <form method="post" action="{{ url_for('quote_action.quote_action') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="tax_year" value="{{ c.year }}">
+            <input type="hidden" name="advisor_id" value="{{ c.quote_advisor_id }}">
+            <input type="hidden" name="action" value="accept">
+            <button class="btn btn-primary btn-sm" type="submit">Offerte annehmen</button>
+          </form>
+        {% elif c.pending_quote %}
+          <button class="btn btn-secondary btn-sm" onclick="withdrawQuote('{{ c.id }}')">Anfrage zurückziehen</button>
+        {% endif %}
+      </div>
+    </div>
 
-        function closeFeedbackModal() {
-            document.getElementById('feedbackModal').style.display = "none";
-        }
+    {% if not c.awaiting_decision %}
+      <div class="rail" style="margin-top:20px;">
+        {% for s in c.rail %}
+          <div class="step {{ s.state }}">
+            <div class="bar"></div>
+            <div class="s-name">{{ s.name }}</div>
+            <div class="s-state">{{ s.label }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="card"><div class="empty">Noch keine offenen Steuerjahre.</div></div>
+{% endfor %}
+</div>
 
-        // Close the modal if user clicks outside of it
-        window.onclick = function(event) {
-            var modal = document.getElementById('feedbackModal');
-            if (event.target == modal) {
-                closeFeedbackModal();
-            }
-        }
+{# ---- Abgeschlossen ---- #}
+{% if completed_cards %}
+<div class="section-label" style="margin-top:28px;">Abgeschlossen</div>
+<div class="dtable">
+  <div class="thead" style="grid-template-columns:110px 1fr 180px 200px;">
+    <div>Jahr</div><div>Treuhänder</div><div>Bewertung</div><div class="right">Steuererklärung</div>
+  </div>
+  {% for c in completed_cards %}
+  <div class="trow" style="grid-template-columns:110px 1fr 180px 200px;">
+    <div class="cell-strong tnum">{{ c.year }}</div>
+    <div>{{ c.advisor_name }}</div>
+    <div>
+      {% if c.rated %}<span class="muted">Bewertet ★★★★★</span>
+      {% else %}<span class="text-action" onclick="openFeedback('{{ c.year }}','{{ c.advisor_id }}','{{ c.advisor_name }}')">Bewertung abgeben</span>{% endif %}
+    </div>
+    <div class="right">
+      {% if c.has_final %}<a class="text-action" href="{{ url_for('dashboard.download_final_tax_return', user_id=user.id, year=c.year) }}">Herunterladen</a>
+      {% else %}<span class="muted">—</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-        // Function to open the advisor details modal and load content via fetch
-        function openAdvisorDetails(advisorId) {
-            // Build the URL to fetch advisor details from the backend.
-            // Adjust the endpoint name if necessary.
-            fetch('{{ url_for("advisor_details.advisor_details") }}?advisor_id=' + advisorId)
-                .then(response => response.text())
-                .then(data => {
-                    document.getElementById('advisorDetailsContent').innerHTML = data;
-                    document.getElementById('advisorDetailsModal').style.display = "block";
-                })
-                .catch(error => {
-                    console.error('Error fetching advisor details:', error);
-                    document.getElementById('advisorDetailsContent').innerHTML = '<p>Error loading advisor details.</p>';
-                });
-        }
+{# ---- Neues Steuerjahr modal ---- #}
+<div class="modal" id="newYearModal">
+  <div class="modal-content" style="max-width:420px;">
+    <span class="modal-close" onclick="closeModal('newYearModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Neues Steuerjahr</h2>
+    <form method="post" action="{{ url_for('dashboard.dashboard') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field"><label for="ny_year">Jahr</label><input type="number" id="ny_year" name="year" min="2000" max="2099" required></div>
+      <div class="field"><label for="ny_deadline">Frist</label><input type="date" id="ny_deadline" name="deadline" required></div>
+      <button class="btn btn-primary btn-block" name="open_tax_year" value="1" type="submit">Eröffnen</button>
+    </form>
+  </div>
+</div>
 
-        // Function to close the modal
-        function closeAdvisorDetails() {
-            document.getElementById('advisorDetailsModal').style.display = "none";
-        }
+{# ---- Bewertung modal ---- #}
+<div class="modal" id="feedbackModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('feedbackModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:4px;">Bewertung abgeben</h2>
+    <div class="muted" id="fbSub" style="font-size:13px; margin-bottom:16px;"></div>
+    <form method="post" action="{{ url_for('feedback.submit_feedback') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="advisor_id" id="fbAdvisor">
+      <input type="hidden" name="tax_year_id" id="fbYear">
+      <input type="hidden" name="rating" id="fbRating" value="5">
+      <div class="field">
+        <label>Bewertung</label>
+        <div class="row" id="starRow">
+          {% for i in range(1,6) %}
+          <button type="button" class="btn btn-secondary" data-star="{{ i }}" onclick="setStars({{ i }})" style="width:52px; height:52px; border-radius:8px; font-size:18px;">★</button>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="field"><label for="fbComment">Kommentar</label><textarea name="comment" id="fbComment" required></textarea></div>
+      <button class="btn btn-primary btn-block" type="submit">Bewertung senden</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
 
-        // Optional: Close modal when user clicks outside the modal content
-        window.onclick = function(event) {
-            var modal = document.getElementById('advisorDetailsModal');
-            if (event.target == modal) {
-                closeAdvisorDetails();
-            }
-        }
+{% block scripts %}
+<script>
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){ if(e.target === m) m.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(function(m){ m.classList.remove('open'); });
+  });
 
+  function openFeedback(year, advisorId, advisorName){
+    document.getElementById('fbYear').value = year;
+    document.getElementById('fbAdvisor').value = advisorId;
+    document.getElementById('fbSub').textContent = advisorName + ' · Steuerjahr ' + year;
+    setStars(5);
+    openModal('feedbackModal');
+  }
+  function setStars(n){
+    document.getElementById('fbRating').value = n;
+    document.querySelectorAll('#starRow [data-star]').forEach(function(b){
+      var on = parseInt(b.dataset.star) <= n;
+      b.style.borderColor = on ? 'var(--black)' : 'var(--hairline)';
+      b.style.color = on ? 'var(--black)' : 'var(--border-dashed)';
+    });
+  }
 
-        function withdrawQuote(taxYearId) {
-            if (confirm("Are you sure you want to withdraw your quote?")) {
-                fetch(`/withdraw_quote/${taxYearId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Optionally show a message or simply reload the page
-                        location.reload();
-                    } else {
-                        alert(data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error("Error withdrawing quote:", error);
-                });
-            }
-        }
-
-    </script>
-     
-</body>
-</html>
+  function withdrawQuote(taxYearId){
+    if(!confirm('Anfrage wirklich zurückziehen?')) return;
+    fetch('/withdraw_quote/' + taxYearId, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      }
+    }).then(function(r){ return r.json(); }).then(function(d){ location.reload(); });
+  }
+</script>
+{% endblock %}

@@ -1,118 +1,142 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips and News</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('settings.settings') }}">Settings</a>
-        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+{% extends "app_base.html" %}
+{% block title %}Unterlagen · Taxlify{% endblock %}
+{% block topbar_title %}Unterlagen{% endblock %}
+{% block subtitle %}<span class="subtitle">Wichtigste Dokumente</span>{% endblock %}
+
+{% set doc_sections = [
+  ("login-dokumente", "Login-Dokumente", [
+    "Aufforderung Einreichung der Steuererklärung",
+  ]),
+  ("einkuenfte-unselbstaendig", "Einkünfte aus unselbständiger Erwerbstätigkeit", [
+    "Lohnausweise",
+    "Lohnausweise Nebenerwerb (Feuerwehr, Kommissionen)",
+  ]),
+  ("einkuenfte-selbstaendig", "Einkünfte aus selbständiger Erwerbstätigkeit", [
+    "Jahresabschluss Selbstständigkeit",
+  ]),
+  ("einkuenfte-versicherungen", "Einkünfte aus Sozial- und anderen Versicherungen", [
+    "EO Auszug der Ausgleichskasse",
+    "Bestätigung AHV/IV Renten & Pensionskassenrenten",
+    "Übersicht Arbeitslosengeld",
+    "Übersicht Krankentaggeld/Unfalltaggeld",
+  ]),
+  ("weitere-einkuenfte", "Weitere Einkünfte Unterhaltsbeiträge", [
+    "Erhaltene Unterhaltsbeiträge",
+    "Aufstellung Vermögen und Erträge aus unverteilter Erbschaft",
+    "Aufstellung erhaltene Erträge Erbschaften / Erbteilungsvertrag",
+    "Aufstellung erhaltene Erträge Schenkungen",
+    "Aufstellung erhaltene übrige Einkünfte",
+    "Aufstellung Kapitalabfindungen anstelle wiederkehrender Leistungen",
+  ]),
+  ("liegenschaften", "Liegenschaften", [
+    "Schätzungsverfügung der Steuerverwaltung",
+    "Belege über Liegenschaftsaufwendungen",
+    "Steuerbescheinigung Hypothek",
+    "Aufstellung Mieteinnahmen",
+  ]),
+  ("berufsauslagen", "Berufsauslagen", [
+    "Belge/Rechnungen ÖV Abonnement",
+    "Belege/Rechnungen für Auslagen im Homeoffice (Büromöbel/Strom etc.)",
+    "Belege/Rechnungen für sonstige Auslagen (Berufskleider)",
+  ]),
+  ("wochenaufenthalter", "Wochenaufenthalter", [
+    "Mietvertrag von zweiter Wohnung",
+  ]),
+  ("schuldzinsen", "Schuldzinsen / Unterhaltsbeiträge / Rentenleistungen", [
+    "Darlehnsverträge",
+    "Zins & Kreditbescheinigungen",
+    "Aufstellung bezahlte Unterhaltsbeiträge",
+    "Belege Rentenzahlungen und dauernde Lasten, Wohnrecht",
+  ]),
+  ("vorsorge", "Beiträge an Vorsorgeeinrichtungen", [
+    "Bescheinigung über Vorsorgebeiträge (2. Säule, 3. Säule)",
+  ]),
+  ("weitere-abzuege", "Weitere Abzüge", [
+    "Belege/Rechnungen Kosten für Kinderbetreuung durch Dritte",
+    "Belege bezahlte AHV-, IV- und EO-Beiträge nicht erwerbstätiger Personen",
+    "Studien Bescheinigung",
+    "Belege/Rechnungen der bezahlten Weiterbildungskosten",
+    "Versicherungsausweis Krankenkasse",
+    "Belege/Rechnungen von Zahnarztkosten, Naturmedizin, Sehhilfen (Brillen), etc.",
+    "Belege/Rechnungen von Behinderungsbedingte Kosten (Kosten Pflege- und Altersheim, Arztzeugnis)",
+    "Spendenbescheinigungen",
+  ]),
+  ("bewegliches-vermoegen", "Bewegliches Vermögen", [
+    "Steuerausweis Bankkonten",
+    "Wertschriftenverzeichnisse der Banken",
+    "Auszug Wallets für Kryptowährungen",
+    "Bescheinigung Lebens- und Rentenversicherungen",
+    "Aufstellung sonstige Vermögenswerte",
+  ]),
+] %}
+
+{% block content %}
+<div class="docs-layout" style="display:grid; grid-template-columns:260px 1fr; gap:32px; align-items:start;">
+
+  {# ---- Sticky section index ---- #}
+  <nav class="docs-index" style="position:sticky; top:24px;">
+    {% for id, title, items in doc_sections %}
+      <a class="docs-index-row{% if loop.first %} active{% endif %}" href="#{{ id }}"
+         style="display:block; padding:8px 12px; font-size:13px; border-radius:6px; text-decoration:none;">
+        {{ title }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  {# ---- Document list ---- #}
+  <div style="max-width:720px;">
+    <h1 style="font-size:24px; font-weight:600; letter-spacing:-0.02em; margin-bottom:12px;">Wichtigste Dokumente</h1>
+    <p style="font-size:14px; line-height:1.6; color:var(--muted); margin-bottom:28px;">
+      Hier findest du eine Übersicht der Unterlagen, die für deine Steuererklärung relevant sein können.
+      Nicht alles trifft auf dich zu – sammle einfach, was zu deiner Situation passt, und lade es später
+      bei den Dokumenten hoch.
+    </p>
+
+    <div class="stack">
+      {% for id, title, items in doc_sections %}
+        <div class="card" id="{{ id }}" style="padding:0; scroll-margin-top:24px;">
+          <div class="card-head">{{ title }}</div>
+          {% for item in items %}
+            <div style="padding:14px 24px; font-size:14px;{% if not loop.last %} border-bottom:1px solid var(--hairline-in);{% endif %}">
+              {{ item }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
     </div>
+  </div>
+</div>
+{% endblock %}
 
-    <div class="content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-        <h2>Wichtigste Dokumente</h2>
+{% block head %}
+<style>
+  .docs-index-row { color: var(--muted); }
+  .docs-index-row:hover { color: var(--ink); }
+  .docs-index-row.active { background: #141312; color: #F5F4F1; }
+  @media (max-width: 860px) {
+    .docs-layout { grid-template-columns: 1fr; }
+    .docs-index { display: none; }
+  }
+</style>
+{% endblock %}
 
-        <h3>Login-Dokumente</h3>
-        <ul>
-            <li>Aufforderung Einreichung der Steuererklärung</li>
-        </ul>
-        
-        <h3>Einkünfte aus unselbständiger Erwerbstätigkeit</h3>
-        <ul>
-            <li>Lohnausweise</li>
-            <li>Lohnausweise Nebenerwerb (Feuerwehr, Kommissionen)</li>
-        </ul>
-
-        <h3>Einkünfte aus selbständiger Erwerbstätigkeit</h3>
-        <ul>
-            <li>Jahresabschluss Selbstständigkeit</li>
-        </ul>
-
-        <h3>Einkünfte aus Sozial- und anderen Versicherungen</h3>
-        <ul>
-            <li>EO Auszug der Ausgleichskasse</li>
-            <li>Bestätigung AHV/IV Renten & Pensionskassenrenten</li>
-            <li>Übersicht Arbeitslosengeld</li>
-            <li>Übersicht Krankentaggeld/Unfalltaggeld</li>
-        </ul>
-
-        <h3>Weitere Einkünfte Unterhaltsbeiträge</h3>
-        <ul>
-            <li>Erhaltene Unterhaltsbeiträge</li>
-            <li>Aufstellung Vermögen und Erträge aus unverteilter Erbschaft</li>
-            <li>Aufstellung erhaltene Erträge Erbschaften / Erbteilungsvertrag</li>
-            <li>Aufstellung erhaltene Erträge Schenkungen</li>
-            <li>Aufstellung erhaltene übrige Einkünfte</li>
-            <li>Aufstellung Kapitalabfindungen anstelle wiederkehrender Leistungen</li>
-        </ul>
-
-        <h3>Liegenschaften</h3>
-        <ul>
-            <li>Schätzungsverfügung der Steuerverwaltung</li>
-            <li>Belege über Liegenschaftsaufwendungen</li>
-            <li>Steuerbescheinigung Hypothek</li>
-            <li>Aufstellung Mieteinnahmen</li>
-        </ul>
-
-        <h3>Berufsauslagen</h3>
-        <ul>
-            <li>Belge/Rechnungen ÖV Abonnement</li>
-            <li>Belege/Rechnungen für Auslagen im Homeoffice (Büromöbel/Strom etc.)</li>
-            <li>Belege/Rechnungen für sonstige Auslagen (Berufskleider)</li>
-        </ul>
-
-        <h3>Wochenaufenthalter</h3>
-        <ul>
-            <li>Mietvertrag von zweiter Wohnung</li>
-        </ul>
-
-        <h3>Schuldzinsen / Unterhaltsbeiträge / Rentenleistungen</h3>
-        <ul>
-            <li>Darlehnsverträge</li>
-            <li>Zins & Kreditbescheinigungen</li>
-            <li>Aufstellung bezahlte Unterhaltsbeiträge</li>
-            <li>Belege Rentenzahlungen und dauernde Lasten, Wohnrecht</li>
-        </ul>
-
-        <h3>Beiträge an Vorsorgeeinrichtungen</h3>
-        <ul>
-            <li>Bescheinigung über Vorsorgebeiträge (2. Säule, 3. Säule)</li>
-        </ul>
-
-        <h3>Weitere Abzüge</h3>
-        <ul>
-            <li>Belege/Rechnungen Kosten für Kinderbetreuung durch Dritte</li>
-            <li>Belege bezahlte AHV-, IV- und EO-Beiträge nicht erwerbstätiger Personen</li>
-            <li>Studien Bescheinigung</li>
-            <li>Belege/Rechnungen der bezahlten Weiterbildungskosten</li>
-            <li>Versicherungsausweis Krankenkasse</li>
-            <li>Belege/Rechnungen von Zahnarztkosten, Naturmedizin, Sehhilfen (Brillen), etc.</li>
-            <li>Belege/Rechnungen von Behinderungsbedingte Kosten (Kosten Pflege- und Altersheim, Arztzeugnis)</li>
-            <li>Spendenbescheinigungen</li>
-        </ul>
-
-        <h3>Bewegliches Vermögen</h3>
-        <ul>
-            <li>Steuerausweis Bankkonten</li>
-            <li>Wertschriftenverzeichnisse der Banken</li>
-            <li>Auszug Wallets für Kryptowährungen</li>
-            <li>Bescheinigung Lebens- und Rentenversicherungen</li>
-            <li>Aufstellung sonstige Vermögenswerte</li>
-        </ul>
-    </div>
-</body>
-</html>
+{% block scripts %}
+<script>
+  (function () {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.docs-index-row'));
+    var sections = rows.map(function (r) {
+      return document.getElementById(r.getAttribute('href').slice(1));
+    });
+    function onScroll() {
+      var pos = window.scrollY + 120;
+      var activeIdx = 0;
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i] && sections[i].offsetTop <= pos) activeIdx = i;
+      }
+      rows.forEach(function (r, i) { r.classList.toggle('active', i === activeIdx); });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+{% endblock %}

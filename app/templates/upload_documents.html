@@ -1,124 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload Documents</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% extends "app_base.html" %}
+{% block title %}Dokumente · Taxlify{% endblock %}
+{% block topbar_title %}Dokumente{% endblock %}
+{% block subtitle %}<span class="subtitle">Steuerjahr {{ tax_year }}</span>{% endblock %}
+
+{% block head %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
-  <script>
-    Dropzone.autoDiscover = false;
-  </script>
-</head>
-<body>
-  <div class="navbar">
-    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('settings.settings') }}">Settings</a>
-    <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-    <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-    <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-  </div>
+  <script>Dropzone.autoDiscover = false;</script>
+{% endblock %}
 
-  <div class="content">
-    <h2>Upload Documents for Tax Year {{ tax_year }}</h2>
-
-    {% with messages = get_flashed_messages(with_categories=True) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
+{% block content %}
+<div class="two-col">
+  <div>
     {% if required_documents %}
-      <form id="upload-form" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        {% for document in required_documents %}
-          <div class="form-group">
-            <label for="dropzone_{{ document.id }}">{{ document.document_name }}</label>
-            <div class="dropzone dz-custom" id="dropzone_{{ document.id }}">
-              <div class="dz-message">Drag and drop files here or click to upload.</div>
-            </div>
+      <div class="card">
+        <div class="between" style="margin-bottom:20px;">
+          <div class="card-title">Angeforderte Belege</div>
+          <div class="muted" style="font-size:13px;">{{ required_documents|length }} angefordert</div>
+        </div>
+
+        <form id="upload-form" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <div class="stack">
+            {% for document in required_documents %}
+              <div class="card-sm" style="border:1px solid var(--hairline);">
+                <div style="font-size:14px; font-weight:500; margin-bottom:10px;">{{ document.document_name }}</div>
+                <div class="dropzone" id="dropzone_{{ document.id }}">
+                  <div class="dz-message">
+                    <div class="dz-title">Datei hierher ziehen oder klicken</div>
+                    <div class="dz-sub">PDF, PNG oder JPG · max. 5 MB pro Datei</div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
           </div>
-        {% endfor %}
-        <button type="button" class="button-blue" id="upload-all" disabled>Upload Documents</button>
-        <div id="upload-warning" class="error" style="display: none;">❗ Please upload a file for each required document before submitting.</div>
-      </form>
+
+          <div class="between" style="margin-top:20px;">
+            <div id="upload-warning" class="muted text-danger" style="display:none; font-size:13px;">
+              Bitte lade für jeden angeforderten Beleg eine Datei hoch.
+            </div>
+            <button type="button" class="btn btn-primary" id="upload-all" disabled style="margin-left:auto;">Belege hochladen</button>
+          </div>
+        </form>
+      </div>
     {% else %}
-      <p class="error">No required documents found for this tax year.</p>
+      <div class="card"><div class="empty">Keine angeforderten Belege für dieses Steuerjahr.</div></div>
     {% endif %}
   </div>
 
-  <script id="upload-url" type="application/json">
-    {{ url_for('upload_documents.upload_documents', year=tax_year) | tojson | safe }}
-  </script>
-  <script type="application/json" id="required-documents-data">
-    {{ required_documents | tojson | safe }}
-  </script>
+  {# Help panel #}
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px;">Woher bekomme ich das?</div>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5;">
+      Die meisten Belege findest du in deinem E-Banking, bei deinem Arbeitgeber
+      (Lohnausweis) oder von deiner Versicherung. Lade sie als PDF, PNG oder JPG hoch.
+    </p>
+    <div style="height:1px; background:var(--hairline); margin:16px 0;"></div>
+    <p style="font-size:13px; color:var(--ink-2); line-height:1.5;">
+      Du bist unsicher, welcher Beleg gemeint ist? Frag deinen Treuhänder.
+    </p>
+    <a href="{{ url_for('advisor.advisors') }}" class="btn btn-secondary btn-sm" style="margin-top:14px;">Treuhänder ansehen</a>
+  </div>
+</div>
+{% endblock %}
 
+{% block scripts %}
+  <script id="upload-url" type="application/json">{{ url_for('upload_documents.upload_documents', year=tax_year) | tojson | safe }}</script>
+  <script type="application/json" id="required-documents-data">{{ required_documents | tojson | safe }}</script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       var allDropzones = [];
       var uploadBtn = document.getElementById("upload-all");
       var warningMsg = document.getElementById("upload-warning");
+      if (!uploadBtn) return;
 
       var uploadUrl = JSON.parse(document.getElementById("upload-url").textContent.trim());
       var requiredDocuments = JSON.parse(document.getElementById("required-documents-data").textContent);
 
       function checkAllFilesSelected() {
-        return allDropzones.every(function (dz) {
-          return dz.files && dz.files.length > 0;
-        });
+        return allDropzones.every(function (dz) { return dz.files && dz.files.length > 0; });
       }
-
       function updateUploadButtonState() {
-        if (checkAllFilesSelected()) {
-          uploadBtn.disabled = false;
-          warningMsg.style.display = "none";
-        } else {
-          uploadBtn.disabled = true;
-        }
+        uploadBtn.disabled = !checkAllFilesSelected();
+        if (!uploadBtn.disabled) warningMsg.style.display = "none";
       }
 
       setTimeout(function () {
         requiredDocuments.forEach(function (doc) {
-          var dropzoneElement = document.getElementById("dropzone_" + doc.id);
-          if (!dropzoneElement) return;
-
-          var myDropzone = new Dropzone(dropzoneElement, {
-            url: uploadUrl.trim(),
-            paramName: "file",
-            autoProcessQueue: false,
-            uploadMultiple: false,
-            addRemoveLinks: true,
-            clickable: dropzoneElement,
-            maxFilesize: 5,
-            acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+          var el = document.getElementById("dropzone_" + doc.id);
+          if (!el) return;
+          new Dropzone(el, {
+            url: uploadUrl.trim(), paramName: "file", autoProcessQueue: false,
+            uploadMultiple: false, addRemoveLinks: true, clickable: el,
+            maxFilesize: 5, acceptedFiles: ".pdf,.png,.jpg,.jpeg",
             init: function () {
               this.complete = false;
               allDropzones.push(this);
-
-              this.on("sending", function (file, xhr, formData) {
-                formData.append("id", doc.id);
-              });
-
-              this.on("success", function (file, response) {
-                console.log("✅ Upload success:", response);
-              });
-
-              this.on("error", function (file, response) {
-                console.error("🚨 Upload failed:", response);
-              });
-
+              this.on("sending", function (file, xhr, formData) { formData.append("id", doc.id); });
               this.on("queuecomplete", function () {
                 this.complete = true;
-                if (allDropzones.every(dz => dz.complete)) {
-                  window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Documents+successfully+uploaded";
+                if (allDropzones.every(function (dz) { return dz.complete; })) {
+                  window.location.href = "{{ url_for('dashboard.dashboard') }}?flash=Belege+erfolgreich+hochgeladen";
                 }
               });
-
               this.on("addedfile", updateUploadButtonState);
               this.on("removedfile", updateUploadButtonState);
             }
@@ -126,17 +110,11 @@
         });
 
         uploadBtn.addEventListener("click", function () {
-          if (!checkAllFilesSelected()) {
-            warningMsg.style.display = "block";
-            return;
-          }
+          if (!checkAllFilesSelected()) { warningMsg.style.display = "block"; return; }
           warningMsg.style.display = "none";
-          allDropzones.forEach(function (dz) {
-            dz.processQueue();
-          });
+          allDropzones.forEach(function (dz) { dz.processQueue(); });
         });
       }, 500);
     });
   </script>
-</body>
-</html>
+{% endblock %}

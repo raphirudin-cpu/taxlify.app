@@ -1,93 +1,82 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Advisor Clients</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <style>
-    .button-blue { background:#007BFF;color:#fff;padding:6px 12px;border:none;border-radius:4px;cursor:pointer }
-    .clients-table {
-      width:100%;
-      border-collapse:collapse;
-      margin-top:1em;
-    }
-    .clients-table th, .clients-table td {
-      border:1px solid #ddd;
-      padding:8px;
-    }
-    .clients-table th {
-      background-color:#007BFF;
-      color:#fff;
-      text-align:left;
-    }
-  </style>
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-      
-        {% if current_user.role == 'admin' %}
-          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-        {% endif %}
-      
-        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-      </div>
-      
-  <div class="content">
-    <h2>Advisor Clients</h2>
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-          {% for category, message in messages %}
-              <div class="{{ category }}">{{ message }}</div>
-          {% endfor %}
-      {% endif %}
-  {% endwith %}
-    {% if clients %}
-      <table class="clients-table">
-        <tr>
-          <th>Client</th>
-          <th>Contact</th>
-          <th>Last Year</th>
-          <th>Returns</th>
-          <th>Open Tasks</th>
-          <th>Next Deadline</th>
-          <th>Actions</th>
-        </tr>
-        {% for c in clients %}
-          <tr>
-            <td>{{ c.name }}</td>
-            <td>
-              {{ c.email }}<br>
-              {{ c.phone }}
-            </td>
-            <td>{{ c.last_year or '—' }}</td>
-            <td>{{ c.returns_count }}</td>
-            <td>{{ c.open_tasks }}</td>
-            <td>
-              {% if c.next_deadline %}
-                {{ c.next_deadline.strftime('%Y-%m-%d') }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td>
-                  <a href="{{ url_for('admin_clients.client_profile', user_id=c.id) }}"
-                    class="button-blue">
-                    View Profile
-                    </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
-    {% else %}
-      <p>No clients found.</p>
-    {% endif %}
+{% extends "app_base.html" %}
+{% block title %}Kunden · Taxlify{% endblock %}
+{% block topbar_title %}Kunden{% endblock %}
+{% block subtitle %}<span class="subtitle">{{ clients|length }} Kunden</span>{% endblock %}
+
+{% block content %}
+<div class="stack">
+
+  {# Search #}
+  <div class="field" style="max-width:360px;">
+    <input type="text" id="clientSearch" placeholder="Kunde suchen" autocomplete="off">
   </div>
-</body>
-</html>
+
+  {# Clients table #}
+  {% if clients %}
+    <div class="dtable" id="clientsTable">
+      <div class="thead" style="grid-template-columns:220px 1fr 110px 110px 130px 150px;">
+        <div>Kunde</div>
+        <div>Kontakt</div>
+        <div class="right">Letztes Jahr</div>
+        <div class="right">Erklärungen</div>
+        <div class="right">Offene Punkte</div>
+        <div class="right">Nächste Frist</div>
+      </div>
+      {% for c in clients %}
+        <a class="trow client-row"
+           href="{{ url_for('admin_clients.client_profile', user_id=c.id) }}"
+           data-search="{{ (c.name ~ ' ' ~ c.email)|lower }}"
+           style="grid-template-columns:220px 1fr 110px 110px 130px 150px;">
+          <div class="cell-strong">{{ c.name }}</div>
+          <div class="cell-muted">{{ c.email }}</div>
+          <div class="right tnum">{{ c.last_year or '—' }}</div>
+          <div class="right tnum">{{ c.returns_count }}</div>
+          <div class="right tnum">{{ c.open_tasks }}</div>
+          <div class="right tnum deadline-cell"
+               data-deadline="{{ c.next_deadline.isoformat() if c.next_deadline else '' }}">
+            {{ c.next_deadline|date_ch }}
+          </div>
+        </a>
+      {% endfor %}
+      <div class="empty" id="clientsEmpty" style="display:none;">Keine Kunden gefunden.</div>
+    </div>
+  {% else %}
+    <div class="dtable"><div class="empty">Noch keine Kunden.</div></div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Client-side name filter
+  (function(){
+    var input = document.getElementById('clientSearch');
+    if(!input) return;
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.client-row'));
+    var empty = document.getElementById('clientsEmpty');
+    input.addEventListener('input', function(){
+      var q = input.value.trim().toLowerCase();
+      var visible = 0;
+      rows.forEach(function(r){
+        var match = r.getAttribute('data-search').indexOf(q) !== -1;
+        r.style.display = match ? '' : 'none';
+        if(match) visible++;
+      });
+      if(empty) empty.style.display = visible === 0 ? '' : 'none';
+    });
+  })();
+
+  // Colour next deadline by urgency (danger if overdue or within 30 days)
+  (function(){
+    var today = new Date(); today.setHours(0,0,0,0);
+    document.querySelectorAll('.deadline-cell').forEach(function(cell){
+      var iso = cell.getAttribute('data-deadline');
+      if(!iso) return;
+      var d = new Date(iso + 'T00:00:00');
+      var days = Math.round((d - today) / 86400000);
+      if(days <= 30) cell.classList.add('text-danger');
+    });
+  })();
+</script>
+{% endblock %}

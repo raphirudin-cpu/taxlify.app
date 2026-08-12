@@ -1,62 +1,68 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('settings.settings') }}">Settings</a>
-        <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-        <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-        <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-    </div>
-    
-    <div class="content">
-        <h2>Checklist für Steuerjahr {{ year }}</h2>
-        
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% extends "app_base.html" %}
+{% block title %}Checkliste · Taxlify{% endblock %}
+{% block topbar_title %}Checkliste{% endblock %}
+{% block subtitle %}<span class="subtitle">Steuerjahr {{ tax_year.year }}</span>{% endblock %}
 
-        {% if step == 0 %}
-            <p>Wir stellen Ihnen nun einige Fragen, um die benötigten Dokumente und Informationen zu erfassen. Klicken Sie auf Start, um zu beginnen.</p>
-            <form action="{{ url_for('checklist.checklist', year=tax_year.year, step=step) }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="step" value="{{ step }}">
-                <button type="submit">Start</button>
-            </form>
-        {% else %}
-        <form action="{{ url_for('checklist.checklist', year=tax_year.year, step=step) }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-group">
-                <label for="answer">{{ question["question"] }}</label>
-                {% if question["type"] == "buttons" %}
-                    <div class="button-group">
-                        {% for option in question["options"] %}
-                            <input type="radio" id="answer_{{ option }}" name="answers" value="{{ option }}" required>
-                            <label for="answer_{{ option }}">{{ option }}</label>
-                        {% endfor %}
-                    </div>
-                {% elif question["type"] == "date" %}
-                    <input type="date" id="answer" name="answers" required>
-                {% else %}
-                    <input type="text" id="answer" name="answers" required>
-                {% endif %}
-            </div>
-            <input type="hidden" name="step" value="{{ step }}">  <!-- ✅ Fix: Ensure correct step submission -->
-            <input type="hidden" name="tax_year_id" value="{{ year }}">
-            <button type="submit">Next</button>
-        </form>
-        {% endif %}
+{% block content %}
+<div style="max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:28px;">
+
+  {# Progress header #}
+  <div>
+    <div class="between" style="margin-bottom:8px;">
+      <div style="font-size:13px; font-weight:500;">Frage {{ step }} von {{ total }}</div>
+      <div class="muted" style="font-size:12px;">Steuerjahr {{ tax_year.year }}</div>
     </div>
-</body>
-</html>
+    <div class="track"><div class="fill" style="width: {{ ((step / total) * 100)|round(0, 'floor') }}%;"></div></div>
+  </div>
+
+  {# Question card #}
+  <form action="{{ url_for('checklist.checklist', year=tax_year.year, step=step) }}" method="post" id="checklistForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="step" value="{{ step }}">
+    <input type="hidden" name="tax_year_id" value="{{ tax_year.year }}">
+
+    <div class="card" style="padding:36px 40px;">
+      <div class="eyebrow" style="margin-bottom:14px;">Steuerjahr {{ tax_year.year }}</div>
+      <h2 style="font-size:26px; font-weight:600; letter-spacing:-0.02em; margin-bottom:28px;">{{ question["question"] }}</h2>
+
+      {% if question["type"] == "buttons" %}
+        <div class="stack-sm" style="gap:10px;">
+          {% for option in question["options"] %}
+            <label class="option-row" style="min-height:56px;">
+              <span>{{ option }}</span>
+              <input type="radio" name="answers" value="{{ option }}" required
+                     {% if saved_answer == option %}checked{% endif %}>
+              <span class="dot"></span>
+            </label>
+          {% endfor %}
+        </div>
+      {% elif question["type"] == "date" %}
+        <input type="date" name="answers" required value="{{ saved_answer or '' }}">
+      {% else %}
+        <input type="text" name="answers" required value="{{ saved_answer or '' }}"
+               placeholder="Antwort eingeben">
+      {% endif %}
+
+      {% if question.get("requires_document") %}
+        <div class="note" style="margin-top:20px;">
+          <span class="dot"></span>
+          <span>Je nach Antwort benötigen wir dazu einen Beleg. Wir fordern ihn später bei den Dokumenten an.</span>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="between" style="margin-top:24px;">
+      {% if step > 1 %}
+        <a href="{{ url_for('checklist.checklist', year=tax_year.year, step=step-1) }}" class="text-action">Zurück</a>
+      {% else %}
+        <a href="{{ url_for('dashboard.dashboard') }}" class="text-action">Zurück</a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary btn-lg">Weiter</button>
+    </div>
+  </form>
+
+  <div class="muted text-center" style="font-size:13px;">
+    Antworten werden automatisch gespeichert. Du kannst jederzeit pausieren.
+  </div>
+</div>
+{% endblock %}

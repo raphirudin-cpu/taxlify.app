@@ -1,317 +1,315 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Advisor Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <!-- Select2 CSS -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet"/>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .content { padding: 20px; }
-    .filter-bar { margin-bottom: 20px; }
-    .filter-bar input, .filter-bar select { margin-right:10px; padding:5px; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { border:1px solid #ddd; padding:8px; }
-    th { background:#007BFF; color:#fff; text-align:left; }
-    .overdue { background:red; color:#fff; padding:5px 10px; border:none; border-radius:4px; }
-    .due-soon { background:orange; color:#fff; padding:5px 10px; border:none; border-radius:4px; }
-    .on-time { background:green; color:#fff; padding:5px 10px; border:none; border-radius:4px; }
-    .button-blue, .button-red, .button-green {
-      color:#fff; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;
-    }
-    .button-blue { background:#007BFF; }
-    .button-red  { background:#dc3545; }
-    .button-green{ background:#28a745; }
-    .modal {
-      display:none; position:fixed; z-index:1; left:0; top:0;
-      width:100%; height:100%; overflow:auto; background:rgba(0,0,0,0.4);
-    }
-    .modal-content {
-      background:#fff; margin:15% auto; padding:20px;
-      border:1px solid #888; width:80%; max-width:500px;
-    }
-    .close {
-      color:#aaa; float:right; font-size:28px; font-weight:bold; cursor:pointer;
-    }
-    .close:hover { color:black; }
-    .stat-form label { display:block; margin-top:10px; }
-    .stat-form input { width:100%; padding:5px; box-sizing:border-box; }
-    .stat-form button { margin-top:15px; }
-  </style>
-</head>
-<body>
-  <div class="navbar">
-    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-    <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-    {% if current_user.role == 'admin' %}
-      <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-      <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-      <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-      <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-      <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-    {% endif %}
-    <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips & News</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
+{% extends "app_base.html" %}
+{% block title %}Arbeitsvorrat · Taxlify{% endblock %}
+{% block topbar_title %}Arbeitsvorrat{% endblock %}
+{% block subtitle %}<span class="subtitle">{{ pending_tax_years|length }} offene Steuerjahre</span>{% endblock %}
+
+{% macro stage(ty) -%}
+{% if ty.draft_tax_return_approved and not ty.final_tax_return_submitted %}final
+{%- elif ty.draft_tax_return_submitted and not ty.draft_tax_return_approved %}await_approve
+{%- elif ty.uploaded_documents and ty.documents_approved and not ty.draft_tax_return_submitted %}draft
+{%- elif ty.uploaded_documents and not ty.documents_approved %}review_docs
+{%- elif not ty.uploaded_documents %}await_docs
+{%- else %}other{% endif %}
+{%- endmacro %}
+
+{% block content %}
+{# ---- Derive KPI + filter counts (template-only, no route changes) ---- #}
+{% set counts = namespace(waiting=0, review=0, draft=0, final=0, blocked=0, offers=0, deadlines=0, lead_total=0, lead_n=0) %}
+{% for ty in pending_tax_years %}
+  {% set s = stage(ty)|trim %}
+  {% if s in ['review_docs', 'draft', 'final'] %}{% set counts.waiting = counts.waiting + 1 %}{% endif %}
+  {% if s == 'review_docs' %}{% set counts.review = counts.review + 1 %}{% endif %}
+  {% if s == 'draft' %}{% set counts.draft = counts.draft + 1 %}{% endif %}
+  {% if s == 'final' %}{% set counts.final = counts.final + 1 %}{% endif %}
+  {% if s in ['await_docs', 'await_approve'] %}{% set counts.blocked = counts.blocked + 1 %}{% endif %}
+  {% if ty.status in ['Quote requested', 'Review Quote'] %}{% set counts.offers = counts.offers + 1 %}{% endif %}
+  {% if ty.deadline and (ty.deadline - current_date).days < 14 %}{% set counts.deadlines = counts.deadlines + 1 %}{% endif %}
+{% endfor %}
+{% for ty in completed_tax_years %}
+  {% if ty.final_submitted and ty.created_at %}
+    {% set counts.lead_total = counts.lead_total + (ty.final_submitted - ty.created_at).days %}
+    {% set counts.lead_n = counts.lead_n + 1 %}
+  {% endif %}
+{% endfor %}
+
+{# ---- KPI row ---- #}
+<div class="kpi-grid" style="margin-bottom:28px;">
+  <div class="kpi inverted">
+    <div class="k-label">Warten auf dich</div>
+    <div class="k-num">{{ counts.waiting }}</div>
+    <div class="k-delta">Steuerjahre mit offener Aktion</div>
   </div>
+  <div class="kpi">
+    <div class="k-label">Offene Offerten</div>
+    <div class="k-num">{{ counts.offers }}</div>
+  </div>
+  <div class="kpi">
+    <div class="k-label">Fristen &lt; 14 Tage</div>
+    <div class="k-num" style="color:var(--danger-text);">{{ counts.deadlines }}</div>
+  </div>
+  <div class="kpi">
+    <div class="k-label">Ø Durchlaufzeit</div>
+    <div class="k-num">{% if counts.lead_n %}{{ (counts.lead_total // counts.lead_n) }} <span class="den">Tage</span>{% else %}—{% endif %}</div>
+  </div>
+</div>
 
-  <div class="content">
-    <h2>Advisor Dashboard</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for cat, msg in messages %}
-          <div class="{{ cat }}">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+{# ---- Filter row ---- #}
+<div class="between" style="margin-bottom:16px; align-items:flex-start;">
+  <div class="row" id="filterPills" style="gap:8px;">
+    <button type="button" class="btn btn-primary btn-sm" data-filter="all">Alle · {{ pending_tax_years|length }}</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-filter="review_docs">Dokumente prüfen · {{ counts.review }}</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-filter="draft">Entwurf einreichen · {{ counts.draft }}</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-filter="final">Final einreichen · {{ counts.final }}</button>
+    <button type="button" class="btn btn-secondary btn-sm" data-filter="blocked">Blockiert · {{ counts.blocked }}</button>
+  </div>
+  <input type="search" id="customerSearch" placeholder="Kunde suchen" style="width:240px; height:34px;">
+</div>
 
-    <!-- Filters -->
-    <div class="filter-bar">
-      <input type="text" id="customerSearch" placeholder="Search by Customer Name">
-      <select id="yearFilter" class="select2">
-        <option value="">All Years</option>
-        {# grab every year, dedupe, then sort descending #}
-        {% set all_years = (pending_tax_years + completed_tax_years)
-             | map(attribute='year')
-             | unique
-             | sort(reverse=true) %}
-        {% for y in all_years %}
-          <option value="{{ y }}">{{ y }}</option>
-        {% endfor %}
-      </select>
-      <select id="deadlineFilter" class="select2">
-        <option value="">All Deadlines</option>
-        <option value="overdue">Overdue</option>
-        <option value="due-soon">Due Soon</option>
-        <option value="on-time">On Time</option>
-      </select>
-      <select id="statusFilter" class="select2">
-        <option value="">All Statuses</option>
-        {% set statuses = pending_tax_years|map(attribute='status')|unique %}
-        {% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
-      </select>
-    </div>
-
-    <!-- Pending Tax Years -->
-    <h3>Pending Tax Years</h3>
-    <table id="pendingTable">
-      <thead>
-        <tr>
-          <th>Customer</th><th>Year</th><th>Status</th><th>Deadline</th>
-          <th>Checklist</th><th>Documents</th><th>Tax Return</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for ty in pending_tax_years %}
-        {% set dd = (ty.deadline - current_date).days %}
-        {% set cls = dd<0 and 'overdue' or (dd<=7 and 'due-soon' or 'on-time') %}
-        <tr data-status="{{ ty.status }}" data-deadline="{{ cls }}">
-          <td>{{ ty.user_name }} {{ ty.user_surname }}</td>
-          <td>{{ ty.year }}</td>
-          <td>{{ ty.status }}</td>
-          <td><button class="{{ cls }}">{{ ty.deadline.strftime('%Y-%m-%d') }}</button></td>
-          <td>
-            <form action="{{ url_for('view_checklist.view_checklist', year=ty.year) }}" method="get" style="display:inline-block;">
-              <input type="hidden" name="user_id" value="{{ ty.user_id }}">
-              <button class="button-blue">View Checklist</button>
-            </form>
-          </td>
-          <td>
-            {% if ty.uploaded_documents %}
-              <form action="{{ url_for('documents.view_documents', year=ty.year) }}" method="post" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="user_id" value="{{ ty.user_id }}">
-                <button class="button-blue">View Documents</button>
-              </form>
-              {% if ty.additional_documents_uploaded %}
-                <a href="{{ url_for('additional_documents.view_additional_documents', year=ty.year, user_id=ty.user_id) }}" class="button-blue">View Additional</a>
-              {% endif %}
-              {% if not ty.documents_approved %}
-                <form action="{{ url_for('documents_action.documents_action') }}" method="post" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                  <input type="hidden" name="user_id" value="{{ ty.user_id }}">
-                  <input type="hidden" name="tax_year_id" value="{{ ty.year }}">
-                  <input type="hidden" name="action" value="accept">
-                  <button class="button-green">Approve Documents</button>
-                </form>
-                <a href="{{ url_for('request_more_documents.set_customer', customer_id=ty.user_id, year=ty.year) }}" class="button-red">Request More</a>
-              {% endif %}
-            {% else %}
-              <button class="button-blue" disabled>Awaiting Docs</button>
-            {% endif %}
-          </td>
-          <td>
-            {% if not ty.draft_tax_return_submitted %}
-              {% if ty.uploaded_documents %}
-                <form action="{{ url_for('submit_tax_return.upload_tax_return') }}" method="post" enctype="multipart/form-data" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                  <input type="hidden" name="user_id" value="{{ ty.user_id }}">
-                  <input type="hidden" name="tax_year_id" value="{{ ty.year }}">
-                  <input type="file" name="tax_return_file" required>
-                  <button class="button-red">Submit Draft</button>
-                </form>
-              {% else %}
-                <button class="button-blue" disabled>Awaiting Docs</button>
-              {% endif %}
-            {% else %}
-              {% if ty.final_tax_return_submitted %}
-                <a class="button-blue" href="{{ url_for('dashboard.download_final_tax_return', user_id=ty.user_id, year=ty.year) }}">Download Final</a>
-                <span>Completed {{ ty.final_submitted.strftime('%Y-%m-%d') }}</span>
-              {% elif ty.draft_tax_return_approved and not ty.final_tax_return_submitted %}
-                <form action="{{ url_for('submit_final_tax_return.upload_final_tax_return') }}" method="post" enctype="multipart/form-data" style="display:inline-block;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                  <input type="hidden" name="user_id" value="{{ ty.user_id }}">
-                  <input type="hidden" name="tax_year_id" value="{{ ty.year }}">
-                  <input type="file" name="final_tax_return_file" required>
-                  <button class="button-red">Submit Final</button>
-                </form>
-              {% else %}
-                <span>Draft submitted {{ ty.created_at.strftime('%Y-%m-%d') if ty.created_at }}</span>
-              {% endif %}
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-
-    <!-- Completed Tax Returns -->
-    <h3>Completed Tax Returns</h3>
-    {% if completed_tax_years %}
-    <table id="completedTable">
-      <thead>
-        <tr>
-          <th>Customer</th><th>Year</th><th>Completed On</th>
-          <th>Download</th><th>Feedback</th><th>Statistic</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for ty in completed_tax_years %}
-        {% set dd = (ty.deadline - current_date).days %}
-        {% set cls = dd<0 and 'overdue' or (dd<=7 and 'due-soon' or 'on-time') %}
-        <tr data-status="{{ ty.status }}" data-deadline="{{ cls }}">
-          <td>{{ ty.user_name }} {{ ty.user_surname }}</td>
-          <td>{{ ty.year }}</td>
-          <td>{{ ty.final_submitted.strftime('%Y-%m-%d') }}</td>
-          <td>
-            <a class="button-blue" href="{{ url_for('dashboard.download_final_tax_return', user_id=ty.user_id, year=ty.year) }}">Download Final</a>
-          </td>
-          <td>
-            <button class="button-blue view-feedback-btn" data-user-id="{{ ty.user_id }}" data-tax-year="{{ ty.year }}">
-              View Feedback
-            </button>
-          </td>
-          <td>
-            <button class="button-blue add-statistic-btn" data-user-id="{{ ty.user_id }}" data-tax-year="{{ ty.year }}">
-              Add Data
-            </button>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-      <p>No completed tax returns yet.</p>
-    {% endif %}
-
-    <!-- Feedback Modal -->
-    <div id="feedbackModal" class="modal">
-      <div class="modal-content">
-        <span class="close" id="feedbackModalClose">&times;</span>
-        <div id="feedbackModalBody"></div>
+{# ---- Queue table ---- #}
+<div class="section-label">Arbeitsvorrat</div>
+<div class="dtable" id="queueTable">
+  <div class="thead" style="grid-template-columns:220px 80px 1fr 150px 220px;">
+    <div>Kunde</div><div>Jahr</div><div>Status</div><div>Frist</div><div>Nächster Schritt</div>
+  </div>
+  {% for ty in pending_tax_years %}
+    {% set s = stage(ty)|trim %}
+    {% set is_blocked = s in ['await_docs', 'await_approve'] %}
+    {% set dd = (ty.deadline - current_date).days if ty.deadline else none %}
+    {% set urg = 'danger' if (dd is not none and dd < 0) else ('warning' if (dd is not none and dd <= 14) else '') %}
+    <div class="trow" style="grid-template-columns:220px 80px 1fr 150px 220px;"
+         data-name="{{ (ty.user_surname ~ ' ' ~ ty.user_name)|lower }}"
+         data-stage="{{ s }}"
+         data-blocked="{{ '1' if is_blocked else '0' }}">
+      <div class="cell-strong">{{ ty.user_surname }} {{ ty.user_name }}</div>
+      <div class="tnum">{{ ty.year }}</div>
+      <div class="cell-muted">{{ ty.status|status_de }}</div>
+      <div>
+        {% if ty.deadline %}<span class="pill {{ urg }}">{{ ty.deadline|date_ch }}</span>{% else %}<span class="cell-muted">—</span>{% endif %}
+      </div>
+      <div>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+        {% if s == 'review_docs' %}
+          <form action="{{ url_for('documents.view_documents', year=ty.year) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <button type="submit" class="btn btn-primary btn-sm">Dokumente prüfen</button>
+          </form>
+          <form action="{{ url_for('documents_action.documents_action') }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <input type="hidden" name="tax_year_id" value="{{ ty.year }}">
+            <input type="hidden" name="action" value="accept">
+            <button type="submit" class="btn btn-secondary btn-sm">Freigeben</button>
+          </form>
+        {% elif s == 'draft' %}
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="openDraft('{{ ty.user_id }}','{{ ty.year }}')">Entwurf einreichen</button>
+          <form action="{{ url_for('documents.view_documents', year=ty.year) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Dokumente</button>
+          </form>
+        {% elif s == 'final' %}
+          <button type="button" class="btn btn-primary btn-sm"
+                  onclick="openFinal('{{ ty.user_id }}','{{ ty.year }}')">Final einreichen</button>
+          <form action="{{ url_for('documents.view_documents', year=ty.year) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Dokumente</button>
+          </form>
+        {% elif s == 'await_approve' %}
+          <span class="state-label">Wartet auf Freigabe</span>
+        {% elif s == 'await_docs' %}
+          <span class="state-label">Wartet auf Belege</span>
+          <form action="{{ url_for('view_checklist.view_checklist', year=ty.year) }}" method="get" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Checkliste</button>
+          </form>
+        {% else %}
+          <span class="state-label">—</span>
+        {% endif %}
+        </div>
       </div>
     </div>
+  {% else %}
+    <div class="trow" style="grid-template-columns:1fr;"><div class="cell-muted">Keine offenen Steuerjahre.</div></div>
+  {% endfor %}
+</div>
 
-    <!-- Statistic Modal -->
-    <div id="statisticModal" class="modal">
-      <div class="modal-content">
-        <span class="close" id="statModalClose">&times;</span>
-        <h3>Add / Edit Statistic</h3>
-        <form id="statForm" class="stat-form" action="{{ url_for('advisor_dashboard.add_statistic') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-          <input type="hidden" name="user_id" id="statUserId">
-          <input type="hidden" name="date" id="statDate">
-          <label for="taxableIncome">Taxable Income</label>
-          <input type="number" step="0.01" name="taxable_income" id="taxableIncome" required>
-          <label for="taxableAssets">Taxable Assets</label>
-          <input type="number" step="0.01" name="taxable_assets" id="taxableAssets" required>
-          <label for="paidTaxes">Paid Taxes</label>
-          <input type="number" step="0.01" name="paid_taxes" id="paidTaxes" required>
-          <button type="submit" class="button-blue">Save</button>
-        </form>
-      </div>
+{# ---- Completed ---- #}
+{% if completed_tax_years %}
+<div class="section-label" style="margin-top:28px;">Abgeschlossen</div>
+<div class="dtable" id="completedTable">
+  <div class="thead" style="grid-template-columns:200px 80px 150px 1fr 150px 130px;">
+    <div>Kunde</div><div>Jahr</div><div>Abgeschlossen</div><div>Steuererklärung</div><div>Bewertung</div><div class="right">Zahlen</div>
+  </div>
+  {% for ty in completed_tax_years %}
+  <div class="trow" style="grid-template-columns:200px 80px 150px 1fr 150px 130px;"
+       data-name="{{ (ty.user_surname ~ ' ' ~ ty.user_name)|lower }}">
+    <div class="cell-strong">{{ ty.user_surname }} {{ ty.user_name }}</div>
+    <div class="tnum">{{ ty.year }}</div>
+    <div class="cell-muted">{{ ty.final_submitted|date_ch }}</div>
+    <div>
+      <a class="text-action" href="{{ url_for('dashboard.download_final_tax_return', user_id=ty.user_id, year=ty.year) }}">Herunterladen</a>
+    </div>
+    <div>
+      <span class="text-action view-feedback-btn" data-user-id="{{ ty.user_id }}" data-tax-year="{{ ty.year }}">Feedback ansehen</span>
+    </div>
+    <div class="right">
+      <span class="text-action add-statistic-btn" data-user-id="{{ ty.user_id }}" data-tax-year="{{ ty.year }}">Erfassen</span>
     </div>
   </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-  <!-- JS -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-  <script>
-  $(function(){
-    // Filters
-    $('.select2').select2({ placeholder:'Select an option', allowClear:true, width:'resolve' })
-                 .on('change', filterTable);
-    $('#customerSearch').on('keyup', filterTable);
+{# ---- Entwurf einreichen modal ---- #}
+<div class="modal" id="draftModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('draftModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Entwurf einreichen</h2>
+    <form action="{{ url_for('submit_tax_return.upload_tax_return') }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="user_id" id="draftUserId">
+      <input type="hidden" name="tax_year_id" id="draftYearId">
+      <div class="field">
+        <label for="tax_return_file">Entwurf (Datei)</label>
+        <input type="file" name="tax_return_file" id="tax_return_file" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Entwurf einreichen</button>
+    </form>
+  </div>
+</div>
 
-    function filterTable(){
-      var nameF = $('#customerSearch').val().toLowerCase(),
-          yearF = $('#yearFilter').val(),
-          dlF   = $('#deadlineFilter').val(),
-          stF   = $('#statusFilter').val();
+{# ---- Final einreichen modal ---- #}
+<div class="modal" id="finalModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('finalModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Final einreichen</h2>
+    <form action="{{ url_for('submit_final_tax_return.upload_final_tax_return') }}" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="user_id" id="finalUserId">
+      <input type="hidden" name="tax_year_id" id="finalYearId">
+      <div class="field">
+        <label for="final_tax_return_file">Finale Steuererklärung (Datei)</label>
+        <input type="file" name="final_tax_return_file" id="final_tax_return_file" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Final einreichen</button>
+    </form>
+  </div>
+</div>
 
-      $('#pendingTable tbody tr, #completedTable tbody tr').each(function(){
-        var $r = $(this),
-            nm = $r.find('td:eq(0)').text().toLowerCase(),
-            yr = $r.find('td:eq(1)').text(),
-            st = $r.data('status')||'',
-            dl = $r.data('deadline')||'',
-            isComp = $r.closest('table').is('#completedTable');
+{# ---- Feedback modal ---- #}
+<div class="modal" id="feedbackModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('feedbackModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Bewertungen</h2>
+    <div id="feedbackModalBody"></div>
+  </div>
+</div>
 
-        var okName = !nameF || nm.includes(nameF),
-            okYr   = !yearF || yr===yearF,
-            okSt   = !stF   || (!isComp && st===stF),
-            okDl   = !dlF   || (!isComp && dl===dlF);
+{# ---- Statistik modal ---- #}
+<div class="modal" id="statisticModal">
+  <div class="modal-content" style="max-width:440px;">
+    <span class="modal-close" onclick="closeModal('statisticModal')">×</span>
+    <h2 style="font-size:18px; margin-bottom:16px;">Zahlen erfassen</h2>
+    <form id="statForm" action="{{ url_for('advisor_dashboard.add_statistic') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <input type="hidden" name="user_id" id="statUserId">
+      <input type="hidden" name="date" id="statDate">
+      <div class="field">
+        <label for="taxableIncome">Steuerbares Einkommen</label>
+        <input type="number" step="0.01" name="taxable_income" id="taxableIncome" required>
+      </div>
+      <div class="field">
+        <label for="taxableAssets">Steuerbares Vermögen</label>
+        <input type="number" step="0.01" name="taxable_assets" id="taxableAssets" required>
+      </div>
+      <div class="field">
+        <label for="paidTaxes">Bezahlte Steuern</label>
+        <input type="number" step="0.01" name="paid_taxes" id="paidTaxes" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Speichern</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
 
-        $r.toggle(okName && okYr && okSt && okDl);
-      });
-    }
-
-    // Feedback modal
-    $('.view-feedback-btn').click(function(){
-      var uid = $(this).data('user-id'),
-          ty  = $(this).data('tax-year');
-      $.get("{{ url_for('advisor_dashboard.view_feedback') }}", { user_id:uid, tax_year:ty })
-       .done(function(html){
-         $('#feedbackModalBody').html(html);
-         $('#feedbackModal').show();
-       });
-    });
-    $('#feedbackModalClose').click(()=>$('#feedbackModal').hide());
-    $(window).click(e=>{ if($(e.target).is('#feedbackModal')) $('#feedbackModal').hide(); });
-
-    // Statistic modal
-    $('.add-statistic-btn').click(function(){
-      var uid = $(this).data('user-id'),
-          ty  = $(this).data('tax-year'),
-          date = ty + '-12-31';
-      $('#statUserId').val(uid);
-      $('#statDate').val(date);
-      $.getJSON("{{ url_for('advisor_dashboard.get_statistic') }}", { user_id:uid, tax_year:ty })
-       .done(function(res){
-         if(res.exists){
-           $('#taxableIncome').val(res.taxable_income);
-           $('#taxableAssets').val(res.taxable_assets);
-           $('#paidTaxes').val(res.paid_taxes);
-         } else {
-           $('#taxableIncome,#taxableAssets,#paidTaxes').val('');
-         }
-         $('#statisticModal').show();
-       });
-    });
-    $('#statModalClose').click(()=>$('#statisticModal').hide());
-    $(window).click(e=>{ if($(e.target).is('#statisticModal')) $('#statisticModal').hide(); });
+{% block scripts %}
+<script>
+  function openModal(id){ document.getElementById(id).classList.add('open'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){ if(e.target === m) m.classList.remove('open'); });
   });
-  </script>
-</body>
-</html>
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(function(m){ m.classList.remove('open'); });
+  });
+
+  function openDraft(uid, year){
+    document.getElementById('draftUserId').value = uid;
+    document.getElementById('draftYearId').value = year;
+    openModal('draftModal');
+  }
+  function openFinal(uid, year){
+    document.getElementById('finalUserId').value = uid;
+    document.getElementById('finalYearId').value = year;
+    openModal('finalModal');
+  }
+
+  // ---- Filter: pills (queue stage) + name search (queue + completed) ----
+  var activeFilter = 'all';
+  function applyFilters(){
+    var q = (document.getElementById('customerSearch').value || '').toLowerCase().trim();
+    document.querySelectorAll('#queueTable .trow[data-stage]').forEach(function(r){
+      var okName = !q || (r.dataset.name || '').indexOf(q) !== -1;
+      var okStage = activeFilter === 'all'
+        || (activeFilter === 'blocked' ? r.dataset.blocked === '1' : r.dataset.stage === activeFilter);
+      r.style.display = (okName && okStage) ? '' : 'none';
+    });
+    document.querySelectorAll('#completedTable .trow[data-name]').forEach(function(r){
+      var okName = !q || (r.dataset.name || '').indexOf(q) !== -1;
+      r.style.display = okName ? '' : 'none';
+    });
+  }
+  document.getElementById('customerSearch').addEventListener('input', applyFilters);
+  document.querySelectorAll('#filterPills [data-filter]').forEach(function(b){
+    b.addEventListener('click', function(){
+      activeFilter = b.dataset.filter;
+      document.querySelectorAll('#filterPills [data-filter]').forEach(function(x){
+        x.classList.remove('btn-primary'); x.classList.add('btn-secondary');
+      });
+      b.classList.remove('btn-secondary'); b.classList.add('btn-primary');
+      applyFilters();
+    });
+  });
+
+  // ---- Feedback modal (AJAX fragment) ----
+  document.querySelectorAll('.view-feedback-btn').forEach(function(el){
+    el.addEventListener('click', function(){
+      var uid = el.dataset.userId, ty = el.dataset.taxYear;
+      var url = "{{ url_for('advisor_dashboard.view_feedback') }}" + '?user_id=' + encodeURIComponent(uid) + '&tax_year=' + encodeURIComponent(ty);
+      fetch(url).then(function(r){ return r.text(); }).then(function(html){
+        document.getElementById('feedbackModalBody').innerHTML = html;
+        openModal('feedbackModal');
+      });
+    });
+  });
+
+  // ---- Statistik modal ----
+  document.querySelectorAll('.add-statistic-btn').forEach(function(el){
+    el.addEventListener('click', function(){
+      var uid = el.dataset.userId, ty = el.dataset.taxYear;
+      document.getElementById('statUserId').value = uid;
+      document.getElementById('statDate').value = ty + '-12-31';
+      var url = "{{ url_for('advisor_dashboard.get_statistic') }}" + '?user_id=' + encodeURIComponent(uid) + '&tax_year=' + encodeURIComponent(ty);
+      fetch(url).then(function(r){ return r.json(); }).then(function(res){
+        document.getElementById('taxableIncome').value = res.exists ? res.taxable_income : '';
+        document.getElementById('taxableAssets').value = res.exists ? res.taxable_assets : '';
+        document.getElementById('paidTaxes').value = res.exists ? res.paid_taxes : '';
+        openModal('statisticModal');
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,16 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tax Return PDF</title>
+  <meta charset="UTF-8">
+  <title>Steuererklärung {{ tax_return.tax_year }}</title>
+  <style>
+    @page { size: A4 portrait; margin: 56px 52px; }
+    html, body {
+      margin: 0; padding: 0;
+      background: #FFFFFF; color: #141312;
+      font-family: Helvetica, "Helvetica Neue", Arial, sans-serif;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+    }
+    .page { max-width: 100%; }
+
+    /* Masthead */
+    .masthead {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding-bottom: 14px; border-bottom: 1px solid #141312;
+    }
+    .masthead .firm { font-size: 16px; font-weight: 600; line-height: 1.2; }
+    .masthead .addr { font-size: 11px; color: #7A776F; margin-top: 4px; line-height: 1.4; }
+    .masthead .brand { font-size: 13px; font-weight: 600; white-space: nowrap; }
+
+    /* Title block */
+    .title-block { margin-top: 40px; }
+    .eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #7A776F; }
+    .title { font-size: 26px; font-weight: 600; margin-top: 8px; line-height: 1.1; }
+    .client-line { font-size: 13px; color: #5A5751; margin-top: 8px; }
+
+    /* Body */
+    .figures { margin-top: 40px; }
+    .row {
+      display: grid; grid-template-columns: 1fr 160px; align-items: baseline;
+      padding: 14px 0; border-bottom: 1px solid #EFEDE9;
+    }
+    .row .label { font-size: 13px; color: #5A5751; }
+    .row .value { font-size: 13px; text-align: right; }
+    .row.total { border-bottom: 1px solid #141312; }
+    .row.total .label,
+    .row.total .value { font-size: 14px; font-weight: 600; color: #141312; }
+
+    /* Footer */
+    .footer {
+      margin-top: 56px; padding-top: 12px; border-top: 1px solid #E5E3DE;
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: #7A776F;
+    }
+  </style>
 </head>
 <body>
-    <h1>Tax Return</h1>
-    <p><strong>Tax Year:</strong> {{ tax_return.tax_year }}</p>
-    <p><strong>Total Income:</strong> ${{ tax_return.total_income }}</p>
-    <p><strong>Total Deductions:</strong> ${{ tax_return.total_deductions }}</p>
-    <p><strong>Net Tax:</strong> ${{ tax_return.net_tax }}</p>
-    <p><strong>Approved:</strong> {{ 'Yes' if tax_return.approved else 'No' }}</p>
+  <div class="page">
+    <div class="masthead">
+      <div>
+        <div class="firm">{{ firm_name or 'Treuhand' }}</div>
+        {% if firm_address %}<div class="addr">{{ firm_address }}</div>{% endif %}
+      </div>
+      <div class="brand">Taxlify</div>
+    </div>
+
+    <div class="title-block">
+      <div class="eyebrow">Steuererklärung</div>
+      <div class="title">Steuerjahr {{ tax_return.tax_year }}</div>
+      {% if client_name %}<div class="client-line">{{ client_name }}</div>{% endif %}
+    </div>
+
+    <div class="figures">
+      <div class="row">
+        <span class="label">Gesamteinkommen</span>
+        <span class="value">{{ tax_return.total_income|chf_amount }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Abzüge total</span>
+        <span class="value">{{ tax_return.total_deductions|chf_amount }}</span>
+      </div>
+      <div class="row total">
+        <span class="label">Netto-Steuer</span>
+        <span class="value">{{ tax_return.net_tax|chf_amount }}</span>
+      </div>
+      <div class="row">
+        <span class="label">Genehmigt</span>
+        <span class="value">{{ 'Ja' if tax_return.approved else 'Nein' }}</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>{% if generated_at %}{{ generated_at|date_ch }}{% endif %}</span>
+      <span>Seite 1</span>
+    </div>
+  </div>
 </body>
 </html>

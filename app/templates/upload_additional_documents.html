@@ -1,35 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload Additional Documents</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{% extends "app_base.html" %}
+{% block title %}Upload Additional Documents · Taxlify{% endblock %}
+
+{% block head %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
   <script>
     Dropzone.autoDiscover = false;
   </script>
-</head>
-<body>
-  <div class="navbar">
-    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('settings.settings') }}">Settings</a>
-    <a href="{{ url_for('advisor.advisors') }}">Advisors</a>
-    <a href="{{ url_for('statistics.statistics') }}">Statistics</a>
-    <a href="{{ url_for('tips_news.tips_news') }}">Tips and News</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-  </div>
-  <div class="content">
-    <h2>Upload Additional Documents for Tax Year {{ tax_year }}</h2>
-    {% with messages = get_flashed_messages(with_categories=True) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-    
+{% endblock %}
+
+{% block content %}
+    <div class="page-header"><h1>Upload Additional Documents for Tax Year {{ tax_year }}</h1></div>
+
     {% if additional_documents %}
       <form id="upload-additional-form" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -46,8 +28,9 @@
     {% else %}
       <p>No additional document requests found for this tax year.</p>
     {% endif %}
-  </div>
-  
+{% endblock %}
+
+{% block scripts %}
   <!-- Pass the upload URL and additional documents data to JavaScript -->
   <script id="upload-url" type="application/json">
     {{ url_for('upload_additional_documents.upload_additional_documents', year=tax_year) | tojson | safe }}
@@ -55,7 +38,7 @@
   <script id="additional-documents-data" type="application/json">
     {{ additional_documents | tojson | safe }}
   </script>
-  
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       // Retrieve and parse the upload URL
@@ -67,7 +50,7 @@
         console.error("Error parsing upload URL:", e);
         return;
       }
-      
+
       // Retrieve and parse the additional documents data
       var additionalDocsElement = document.getElementById("additional-documents-data");
       var additionalDocuments;
@@ -77,9 +60,9 @@
         console.error("Error parsing additional documents data:", e);
         return;
       }
-      
+
       var allDropzones = [];
-      
+
       // Iterate over each document request and initialize a Dropzone for it
       additionalDocuments.forEach(function(doc) {
         var docId = doc.id;
@@ -111,7 +94,7 @@
           }
         });
       });
-      
+
       // When the "Upload All Documents" button is clicked, process all queues.
       document.getElementById("upload-all").addEventListener("click", function() {
         allDropzones.forEach(function(dz) {
@@ -122,5 +105,4 @@
       });
     });
   </script>
-</body>
-</html>
+{% endblock %}

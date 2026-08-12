@@ -1,44 +1,14 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips and News</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="navbar">
-        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('advisor_advisors.advisors') }}">Advisors</a>
-        <a href="{{ url_for('advisor_settings.advisor_settings') }}">Settings</a>
-      
-        {% if current_user.role == 'admin' %}
-          <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Admin Dashboard</a>
-          <a href="{{ url_for('admin_clients.admin_clients') }}">Clients</a>
-          <a href="{{ url_for('admin_settings.advisor_settings') }}">Admin Settings</a>
-          <a href="{{ url_for('billing.billing_index') }}">Billing</a>
-          <a href="{{ url_for('advisor_quotes.advisor_quotes') }}">Quotes</a>
-        {% endif %}
-      
-        <a href="{{ url_for('advisor_tips_news.tips_news') }}">Tips and News</a>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
-      </div>
-      
-    <div class="content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-        <h2>Wichtigste Dokumente</h2>
+{% extends "app_base.html" %}
+{% block title %}Tips and News · Taxlify{% endblock %}
+
+{% block content %}
+        <div class="page-header"><h1>Wichtigste Dokumente</h1></div>
 
         <h3>Login-Dokumente</h3>
         <ul>
             <li>Aufforderung Einreichung der Steuererklärung</li>
         </ul>
-        
+
         <h3>Einkünfte aus unselbständiger Erwerbstätigkeit</h3>
         <ul>
             <li>Lohnausweise</li>
@@ -121,6 +91,4 @@
             <li>Bescheinigung Lebens- und Rentenversicherungen</li>
             <li>Aufstellung sonstige Vermögenswerte</li>
         </ul>
-    </div>
-</body>
-</html>
+{% endblock %}

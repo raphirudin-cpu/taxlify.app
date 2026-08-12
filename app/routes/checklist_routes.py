@@ -13,19 +13,19 @@ def checklist(year):
 
     tax_year = TaxYear.query.filter_by(year=year, user_id=user.id).first()
     if not tax_year:
-        flash("Invalid tax year.", "error")
+        flash("Ungültiges Steuerjahr.", "error")
         return redirect(url_for('dashboard.dashboard'))
 
-    print(f"User: {user.id}, Year: {year}, Step: {step}")
+    total = len(questions)
 
     if request.method == 'POST':
         step = int(request.form.get('step', step))  # Get step from form to ensure it's updated
         answer = request.form.get('answers', '').strip()
-        print(f"Step {step} - Received answer:", answer)
 
         if not answer:
-            flash("Answer cannot be empty.", "error")
-            return render_template('checklist.html', tax_year=tax_year, step=step, question=questions.get(step))
+            flash("Bitte beantworte die Frage.", "error")
+            return render_template('checklist.html', tax_year=tax_year, step=step,
+                                   question=questions.get(step), total=total, saved_answer=answer)
 
         # Retrieve the question details
         question_data = questions.get(step, {})
@@ -62,12 +62,11 @@ def checklist(year):
 
         try:
             db.session.commit()  # Commit the answer transaction
-            print(f"Step {step} answer saved successfully!")
         except Exception as e:
             db.session.rollback()
-            flash("Database error.", "error")
-            print(f"Database commit failed for Step {step}:", str(e))
-            return render_template('checklist.html', tax_year=tax_year, step=step, question=questions.get(step))
+            flash("Datenbankfehler.", "error")
+            return render_template('checklist.html', tax_year=tax_year, step=step,
+                                   question=questions.get(step), total=total, saved_answer=answer)
 
         # ✅ Determine the next step
         next_step = step + 1
@@ -82,8 +81,7 @@ def checklist(year):
             if required_docs_count == 0:
                 tax_year.uploaded_documents = 1
             db.session.commit()
-            print(f"Checklist for {year} completed!")
-            flash("Checklist completed successfully!", "success")
+            flash("Checkliste abgeschlossen.", "success")
             return redirect(url_for('dashboard.dashboard'))
 
         # ✅ Save required document entry if doc_flag is 1 (without redirecting to an upload page)
@@ -97,7 +95,9 @@ def checklist(year):
             db.session.add(required_doc)
             db.session.commit()
 
-        print(f"Moving to Step {next_step}")
         return redirect(url_for('checklist.checklist', year=year, step=next_step))
 
-    return render_template('checklist.html', tax_year=tax_year, step=step, question=questions.get(step))
+    saved = ChecklistAnswer.query.filter_by(tax_year_id=tax_year.id, step=step, user_id=user.id).first()
+    saved_answer = saved.answers if saved else None
+    return render_template('checklist.html', tax_year=tax_year, step=step,
+                           question=questions.get(step), total=total, saved_answer=saved_answer)

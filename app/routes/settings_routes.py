@@ -12,7 +12,7 @@ settings_bp = Blueprint('settings', __name__)
 def settings():
     # Ensure the current user is a regular user
     if current_user.role != 'user':
-        flash("Access denied.", "error")
+        flash("Zugriff verweigert.", "error")
         return redirect(url_for('auth.login'))
 
     user = current_user
@@ -30,7 +30,7 @@ def settings():
                     User.id != user.id
                 ).first()
                 if existing_user:
-                    flash("Email already in use", "error")
+                    flash("E-Mail-Adresse wird bereits verwendet.", "error")
                     return redirect(url_for('settings.settings'))
 
             user.lastname             = request.form.get('name')
@@ -51,10 +51,10 @@ def settings():
 
             try:
                 db.session.commit()
-                flash("Settings saved successfully.", "success")
+                flash("Einstellungen erfolgreich gespeichert.", "success")
             except Exception as e:
                 db.session.rollback()
-                flash("Error saving settings.", "error")
+                flash("Fehler beim Speichern der Einstellungen.", "error")
 
         elif request.form.get('form_name') == 'password':
             # --- PASSWORD CHANGE ---
@@ -64,27 +64,27 @@ def settings():
 
             # Verify current password
             if not check_password_hash(user.password, old_password):
-                flash("Current password is incorrect.", "error")
+                flash("Das aktuelle Passwort ist nicht korrekt.", "error")
                 return redirect(url_for('settings.settings'))
 
             # Check new password confirmation
             if new_password != confirm_password:
-                flash("New passwords do not match.", "error")
+                flash("Die neuen Passwörter stimmen nicht überein.", "error")
                 return redirect(url_for('settings.settings'))
 
             # Optional: enforce password strength
             if len(new_password) < 8:
-                flash("New password must be at least 8 characters long.", "error")
+                flash("Das neue Passwort muss mindestens 8 Zeichen lang sein.", "error")
                 return redirect(url_for('settings.settings'))
 
             # Update password
             user.password = generate_password_hash(new_password)
             try:
                 db.session.commit()
-                flash("Password changed successfully.", "success")
+                flash("Passwort erfolgreich geändert.", "success")
             except Exception as e:
                 db.session.rollback()
-                flash("Error changing password.", "error")
+                flash("Fehler beim Ändern des Passworts.", "error")
 
         # After handling either form, reload the page to show messages
         return redirect(url_for('settings.settings'))

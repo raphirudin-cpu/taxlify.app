@@ -24,17 +24,17 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and check_password_hash(user.password, password):
             if not user.email_confirmed:
-                flash('Please confirm your email address before logging in.', 'error')
+                flash('Bitte bestätige zuerst deine E-Mail-Adresse.', 'error')
                 return redirect(url_for('auth.login'))
 
             login_user(user)
-            flash('Login successful!', 'success')
+            flash('Erfolgreich angemeldet.', 'success')
             if user.role in ('admin', 'advisor'):
                 return redirect(url_for('advisor_dashboard.advisor_dashboard'))
             else:
                 return redirect(url_for('dashboard.dashboard'))
         else:
-            flash('Invalid email or password.', 'error')
+            flash('E-Mail oder Passwort ist falsch.', 'error')
 
     return render_template('login.html')
 
@@ -49,11 +49,11 @@ def register():
         account_type = request.form.get('account_type')
 
         if password != confirm_password:
-            flash('Passwords do not match.', 'error')
+            flash('Die Passwörter stimmen nicht überein.', 'error')
             return render_template('register.html')
 
         if User.query.filter_by(email=email).first():
-            flash('Email is already registered.', 'error')
+            flash('Diese E-Mail ist bereits registriert.', 'error')
             return render_template('register.html')
 
         hashed_password = generate_password_hash(password)
@@ -81,9 +81,9 @@ def register():
             current_app.logger.info(f"Welcome and confirmation emails queued for {email}")
         except Exception as e:
             current_app.logger.error(f"Failed to queue emails for {email}: {str(e)}")
-            flash('Could not send emails. Please contact support.', 'error')
+            flash('E-Mails konnten nicht gesendet werden. Bitte kontaktiere den Support.', 'error')
 
-        flash('Registration successful! Please check your inbox to confirm your email.', 'success')
+        flash('Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('register.html')
@@ -93,24 +93,24 @@ def confirm_email(token):
     current_app.logger.info(f"[DEBUG] Reached confirm route with token: {token}")
     email = confirm_token(token)
     if not email:
-        flash('The confirmation link is invalid or has expired.', 'error')
+        flash('Der Bestätigungslink ist ungültig oder abgelaufen.', 'error')
         return redirect(url_for('auth.login'))
 
     user = User.query.filter_by(email=email).first_or_404()
 
     if user.email_confirmed:
-        flash('Account already confirmed. Please login.', 'error')
+        flash('Konto bereits bestätigt. Bitte melde dich an.', 'error')
     else:
         user.email_confirmed = True
         db.session.commit()
-        flash('You have confirmed your account. Thanks!', 'success')
+        flash('Dein Konto ist bestätigt. Danke!', 'success')
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.', 'error')
+    flash('Du wurdest abgemeldet.', 'success')
     return redirect(url_for('auth.login'))
 
 from app.utils.password_reset_token import generate_password_reset_token, confirm_password_reset_token
@@ -124,7 +124,7 @@ def forgot_password():
         if user:
             token = generate_password_reset_token(email)
             send_password_reset_email.delay(email, token)
-        flash('If that email exists, a reset link has been sent.', 'success')
+        flash('Falls die E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('forgot_password.html')
@@ -133,20 +133,20 @@ def forgot_password():
 def reset_password(token):
     email = confirm_password_reset_token(token)
     if not email:
-        flash('Invalid or expired token.', 'error')
+        flash('Der Link ist ungültig oder abgelaufen.', 'error')
         return redirect(url_for('auth.forgot_password'))
 
     if request.method == 'POST':
         password = request.form.get('password')
         confirm = request.form.get('confirm_password')
         if password != confirm:
-            flash('Passwords do not match.', 'error')
+            flash('Die Passwörter stimmen nicht überein.', 'error')
             return render_template('reset_password.html', token=token)
 
         user = User.query.filter_by(email=email).first_or_404()
         user.password = generate_password_hash(password)
         db.session.commit()
-        flash('Password reset successful. You can now log in.', 'success')
+        flash('Passwort erfolgreich zurückgesetzt. Du kannst dich jetzt anmelden.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('reset_password.html', token=token)

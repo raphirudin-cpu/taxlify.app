@@ -1,12 +1,105 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort, current_app
 from flask_login import login_required, current_user, logout_user
-from app.models import db, User, TaxYear, Quote, Feedback, Advisor
+from app.models import db, User, TaxYear, Quote, Feedback, Advisor, RequiredDocument, UserStatistics
 from app.security import tax_year_for_request, advisor_is_bound, send_stored_file
 from datetime import datetime, timedelta
 import os
 
 # Define Blueprint
 dashboard_bp = Blueprint('dashboard', __name__)
+
+
+def _deadline_urgency(deadline, today, three_months):
+    if not deadline:
+        return "muted"
+    if deadline < today:
+        return "danger"
+    if deadline <= three_months:
+        return "warning"
+    return "muted"
+
+
+_RAIL_STATE_LABEL = {"done": "Erledigt", "active": "Offen", "pending": "Ausstehend"}
+
+
+def _rail(ty):
+    """Five-step progress rail derived from status flags (view-only)."""
+    def step(name, state):
+        return {"name": name, "state": state, "label": _RAIL_STATE_LABEL[state]}
+
+    checkliste = "done" if ty.checklist_completed else "active"
+
+    if ty.advisor_id:
+        offerte = "done"
+    elif ty.status == "Review Quote":
+        offerte = "active"
+    else:
+        offerte = "pending"
+
+    if ty.documents_approved:
+        dokumente = "done"
+    elif ty.uploaded_documents or ty.additional_documents_request:
+        dokumente = "active"
+    else:
+        dokumente = "pending"
+
+    if ty.draft_tax_return_approved:
+        entwurf = "done"
+    elif ty.draft_tax_return_submitted:
+        entwurf = "active"
+    else:
+        entwurf = "pending"
+
+    einreichung = "done" if ty.final_tax_return_submitted else "pending"
+
+    return [
+        step("Checkliste", checkliste),
+        step("Offerte", offerte),
+        step("Dokumente", dokumente),
+        step("Entwurf", entwurf),
+        step("Einreichung", einreichung),
+    ]
+
+
+def _hero_action(open_years):
+    """Pick the single most urgent open action across all tax years."""
+    # 1) missing documents
+    for t in open_years:
+        if t.status == "Additional documents requested" or (t.advisor_id and not t.uploaded_documents):
+            return {
+                "headline": f"Belege für {t.year} hochladen",
+                "sub": "Dein Treuhänder wartet auf deine Unterlagen.",
+                "url": url_for("upload_documents.upload_documents", year=t.year),
+                "cta": "Belege hochladen",
+            }
+    # 2) quote to review
+    for t in open_years:
+        if t.status == "Review Quote":
+            return {
+                "headline": f"Offerte für {t.year} prüfen",
+                "sub": "Eine Offerte wartet auf deine Entscheidung.",
+                "url": url_for("dashboard.dashboard"),
+                "cta": "Offerte prüfen",
+            }
+    # 3) checklist incomplete
+    for t in open_years:
+        if not t.checklist_completed:
+            return {
+                "headline": f"Checkliste für {t.year} ausfüllen",
+                "sub": "Beantworte ein paar Fragen, damit es weitergeht.",
+                "url": url_for("checklist.checklist", year=t.year),
+                "cta": "Checkliste ausfüllen",
+            }
+    # 4) draft to review
+    for t in open_years:
+        if t.draft_tax_return_submitted and not t.draft_tax_return_approved:
+            return {
+                "headline": f"Entwurf für {t.year} prüfen",
+                "sub": "Dein Treuhänder hat einen Entwurf eingereicht.",
+                "url": url_for("dashboard.dashboard"),
+                "cta": "Entwurf prüfen",
+            }
+    return None
 
 @dashboard_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
@@ -24,7 +117,7 @@ def dashboard():
 
     # Check if this is the first login; if so, redirect accordingly.
     if user.first_login == 0:
-        flash("Please update your settings on your first login.", "error")
+        flash("Bitte aktualisiere deine Einstellungen bei der ersten Anmeldung.", "error")
         if user.role in ('admin', 'advisor'):
             return redirect(url_for('advisor_dashboard.advisor_dashboard'))
         else:
@@ -41,39 +134,99 @@ def dashboard():
 
         existing_tax_year = TaxYear.query.filter_by(user_id=user_id, year=year).first()
         if existing_tax_year:
-            flash(f"The tax year {year} is already opened.", "error")
+            flash(f"Das Steuerjahr {year} ist bereits eröffnet.", "error")
         else:
             new_tax_year = TaxYear(user_id=user_id, year=year, status='Open', deadline=deadline, advisor_id=None)
             db.session.add(new_tax_year)
             db.session.commit()
-            flash("Tax year opened successfully.", "success")
+            flash("Steuerjahr eröffnet.", "success")
 
     # Fetch tax years
     tax_years = TaxYear.query.filter_by(user_id=user_id).order_by(TaxYear.year.desc()).all()
-    
+
     # Fetch quotes
     quotes = Quote.query.filter_by(user_id=user_id).all()
     requested_quotes = {q.tax_year: q for q in quotes}
 
-    # Fetch feedback
-    feedbacks = {f"{f.tax_year}_{f.advisor_id}": f.created_at for f in Feedback.query.filter_by(user_id=user_id).all()}
+    # Fetch feedback keys (which year+advisor combos already have a rating)
+    feedbacks = {f"{f.tax_year}_{f.advisor_id}" for f in Feedback.query.filter_by(user_id=user_id).all()}
 
-    # Query all advisors and create a dictionary keyed by advisor id.
-    advisors = Advisor.query.all()
-    advisor_dict = {advisor.id: advisor for advisor in advisors}
+    advisor_dict = {a.id: a for a in Advisor.query.all()}
 
     today = datetime.utcnow().date()
     three_months = today + timedelta(days=90)
 
+    open_years = [t for t in tax_years if not t.final_tax_return_submitted]
+    completed_years = [t for t in tax_years if t.final_tax_return_submitted]
+
+    # Per-open-year view cards
+    year_cards = []
+    for t in open_years:
+        adv = advisor_dict.get(t.advisor_id) if t.advisor_id else None
+        quote = requested_quotes.get(t.year)
+        year_cards.append({
+            "id": t.id,
+            "year": t.year,
+            "status": t.status,
+            "deadline": t.deadline,
+            "urgency": _deadline_urgency(t.deadline, today, three_months),
+            "advisor_name": adv.name if adv else None,
+            "advisor_city": adv.city if adv else None,
+            "awaiting_decision": t.status == "Review Quote",
+            "pending_quote": bool(quote and quote.quote_status == "Pending"),
+            "quote_amount": quote.quote_amount if quote else None,
+            "quote_advisor_id": quote.advisor_id if quote else None,
+            "rail": _rail(t),
+        })
+
+    # Completed years table rows
+    completed_cards = []
+    for t in completed_years:
+        adv = advisor_dict.get(t.advisor_id) if t.advisor_id else None
+        completed_cards.append({
+            "year": t.year,
+            "advisor_name": adv.name if adv else "—",
+            "advisor_id": t.advisor_id,
+            "has_final": bool(t.final_file_path),
+            "rated": f"{t.year}_{t.advisor_id}" in feedbacks,
+        })
+
+    # KPIs
+    open_year_ids = [t.id for t in open_years]
+    if open_year_ids:
+        req_docs = RequiredDocument.query.filter(
+            RequiredDocument.user_id == user_id,
+            RequiredDocument.tax_year_id.in_(open_year_ids),
+        ).all()
+        docs_total = len(req_docs)
+        docs_uploaded = sum(1 for d in req_docs if d.file_path)
+    else:
+        docs_total = docs_uploaded = 0
+
+    next_deadline = min((t.deadline for t in open_years if t.deadline), default=None)
+
+    latest_stat = (UserStatistics.query.filter_by(user_id=user_id)
+                   .order_by(UserStatistics.date.desc()).first())
+
+    kpis = {
+        "open_count": len(open_years),
+        "next_deadline": next_deadline,
+        "docs_uploaded": docs_uploaded,
+        "docs_total": docs_total,
+        "tax_year_label": latest_stat.date.year if latest_stat and latest_stat.date else None,
+        "tax_paid": latest_stat.paid_taxes if latest_stat else None,
+    }
+
+    hero = _hero_action(open_years)
+
     return render_template(
         'dashboard.html',
         user=user,
-        tax_years=tax_years,
-        requested_quotes=requested_quotes,
-        feedbacks=feedbacks,
+        hero=hero,
+        year_cards=year_cards,
+        completed_cards=completed_cards,
+        kpis=kpis,
         advisors=advisor_dict,
-        today=today,
-        three_months=three_months
     )
 
 @dashboard_bp.route('/quote_details/<int:tax_year_id>')

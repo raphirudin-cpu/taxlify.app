@@ -26,7 +26,7 @@ def statistics():
         )
         db.session.add(new_entry)
         db.session.commit()
-        flash('Data added successfully.', 'success')
+        flash('Daten hinzugefügt.', 'success')
         return redirect(url_for('statistics.statistics'))  # ✅ Prevents resubmission on refresh
 
     data_points = UserStatistics.query.filter_by(user_id=user.id).order_by(UserStatistics.date.desc()).all()
@@ -48,5 +48,5 @@ def edit_statistics(entry_id):
     entry.paid_taxes = request.form['edit_paid_taxes']
 
     db.session.commit()
-    flash('Entry updated successfully.', 'success')
+    flash('Eintrag aktualisiert.', 'success')
     return redirect(url_for('statistics.statistics'))

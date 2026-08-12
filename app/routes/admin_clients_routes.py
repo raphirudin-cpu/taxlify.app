@@ -95,11 +95,11 @@ def client_profile(user_id):
     if current_user.role == 'advisor':
         adv_rec = current_advisor()
         if not adv_rec:
-            flash("You aren’t tied to an advisor record.", "danger")
+            flash("Du bist keinem Treuhänder-Datensatz zugeordnet.", "danger")
             return redirect(url_for('dashboard.dashboard'))
         advisor_id = adv_rec.id
         if not advisor_is_client(user_id):
-            flash("Access denied.", "danger")
+            flash("Zugriff verweigert.", "danger")
             return redirect(url_for('dashboard.dashboard'))
 
     client = User.query.get_or_404(user_id)
@@ -233,12 +233,12 @@ def download_final_tax_return(user_id, year):
     if current_user.role == 'advisor':
         adv_rec = current_advisor()
         if not adv_rec or ty.advisor_id != adv_rec.id:
-            flash("Access denied.", "danger")
+            flash("Zugriff verweigert.", "danger")
             return redirect(url_for('admin_clients.client_profile', user_id=user_id))
 
     # ensure there's a final file path
     if not ty.final_file_path:
-        flash("No final return available.", "warning")
+        flash("Keine finale Steuererklärung verfügbar.", "warning")
         return redirect(url_for('admin_clients.client_profile', user_id=user_id))
 
     # compute absolute path under project root (uploads is sibling to app/)
@@ -247,7 +247,7 @@ def download_final_tax_return(user_id, year):
 
     if not os.path.isfile(abs_path):
         current_app.logger.warning("Final return file missing on disk: %s", abs_path)
-        flash("File not found on server.", "danger")
+        flash("Datei auf dem Server nicht gefunden.", "danger")
         return redirect(url_for('admin_clients.client_profile', user_id=user_id))
 
     return send_file(abs_path, as_attachment=True)
