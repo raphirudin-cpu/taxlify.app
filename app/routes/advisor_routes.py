@@ -34,7 +34,9 @@ def advisors():
             'id': adv.id,
             'logo': logo_url,
             'name': adv.name,
-            'city': adv.city
+            'city': adv.city,
+            'since_year': adv.created_at.year if adv.created_at else None,
+            'review_count': Feedback.query.filter_by(advisor_id=adv.id).count(),
         })
 
     tax_years = TaxYear.query.filter_by(user_id=user.id).all()

@@ -8,7 +8,7 @@
 
   {# Search #}
   <div class="field" style="max-width:360px;">
-    <input type="text" id="clientSearch" placeholder="Kunde suchen" autocomplete="off">
+    <input type="text" id="clientSearch" placeholder="Kunde suchen" autocomplete="off" style="height:36px;">
   </div>
 
   {# Clients table #}
@@ -67,7 +67,7 @@
     });
   })();
 
-  // Colour next deadline by urgency (danger if overdue or within 30 days)
+  // Colour next deadline by urgency: overdue -> danger, within 14 days -> warning
   (function(){
     var today = new Date(); today.setHours(0,0,0,0);
     document.querySelectorAll('.deadline-cell').forEach(function(cell){
@@ -75,7 +75,8 @@
       if(!iso) return;
       var d = new Date(iso + 'T00:00:00');
       var days = Math.round((d - today) / 86400000);
-      if(days <= 30) cell.classList.add('text-danger');
+      if(days < 0) cell.classList.add('text-danger');
+      else if(days <= 14) cell.style.color = 'var(--warning-text)';
     });
   })();
 </script>

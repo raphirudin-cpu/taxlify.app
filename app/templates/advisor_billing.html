@@ -9,7 +9,7 @@
   <div class="card">
     <div class="card-head"><div class="card-title">Gekaufte Slots</div></div>
     {% if purchases %}
-      <div class="dtable">
+      <div class="dtable" style="border:none; border-radius:0;">
         <div class="thead" style="grid-template-columns:90px 150px repeat(6,1fr) 190px;">
           <div>Jahr</div>
           <div>Plan</div>
@@ -57,7 +57,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="field" style="margin:0;">
         <label for="tax_year">Steuerjahr</label>
-        <select name="tax_year" id="tax_year" required style="min-width:160px;">
+        <select name="tax_year" id="tax_year" required style="min-width:180px;">
           <option value="">— Jahr wählen —</option>
           {% for y in range(2000, 2100) %}
             <option value="{{ y }}">{{ y }}</option>
@@ -81,7 +81,7 @@
   <div class="card">
     <div class="card-head"><div class="card-title">Rechnungen</div></div>
     {% if invoices %}
-      <div class="dtable">
+      <div class="dtable" style="border:none; border-radius:0;">
         <div class="thead" style="grid-template-columns:150px 1fr 140px 130px 110px;">
           <div>Datum</div>
           <div>Beschreibung</div>

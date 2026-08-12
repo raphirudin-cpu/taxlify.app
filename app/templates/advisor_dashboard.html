@@ -49,7 +49,7 @@
   </div>
   <div class="kpi">
     <div class="k-label">Ø Durchlaufzeit</div>
-    <div class="k-num">{% if counts.lead_n %}{{ (counts.lead_total // counts.lead_n) }} <span class="den">Tage</span>{% else %}—{% endif %}</div>
+    <div class="k-num">{% if counts.lead_n %}{{ (counts.lead_total // counts.lead_n) }} <span style="font-size:14px; color:var(--muted); font-weight:400;">Tage</span>{% else %}—{% endif %}</div>
   </div>
 </div>
 
@@ -62,7 +62,7 @@
     <button type="button" class="btn btn-secondary btn-sm" data-filter="final">Final einreichen · {{ counts.final }}</button>
     <button type="button" class="btn btn-secondary btn-sm" data-filter="blocked">Blockiert · {{ counts.blocked }}</button>
   </div>
-  <input type="search" id="customerSearch" placeholder="Kunde suchen" style="width:240px; height:34px;">
+  <input type="search" id="customerSearch" placeholder="Kunde suchen" style="width:240px; height:36px;">
 </div>
 
 {# ---- Queue table ---- #}

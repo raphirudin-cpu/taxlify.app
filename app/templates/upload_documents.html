@@ -16,7 +16,7 @@
       <div class="card">
         <div class="between" style="margin-bottom:20px;">
           <div class="card-title">Angeforderte Belege</div>
-          <div class="muted" style="font-size:13px;">{{ required_documents|length }} angefordert</div>
+          <div class="muted" style="font-size:13px;">{{ required_documents|length - (uploaded_docs|default([])|length) }} von {{ required_documents|length }} offen</div>
         </div>
 
         <form id="upload-form" method="post" enctype="multipart/form-data">

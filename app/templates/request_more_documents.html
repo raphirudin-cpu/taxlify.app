@@ -69,8 +69,10 @@
       if (!value) return;
 
       var row = document.createElement('div');
-      row.className = 'card-sm between';
+      row.className = 'between';
       row.style.border = '1px solid var(--hairline)';
+      row.style.borderRadius = '8px';
+      row.style.padding = '13px 16px';
 
       var label = document.createElement('span');
       label.style.fontSize = '14px';
@@ -82,8 +84,9 @@
       hidden.value = value;
 
       var remove = document.createElement('span');
-      remove.className = 'text-action';
-      remove.style.fontSize = '18px';
+      remove.style.cursor = 'pointer';
+      remove.style.color = 'var(--muted-light)';
+      remove.style.fontSize = '16px';
       remove.style.lineHeight = '1';
       remove.textContent = '×';
       remove.addEventListener('click', function () {

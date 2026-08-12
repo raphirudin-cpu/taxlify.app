@@ -21,7 +21,7 @@
 <div class="kpi-grid cols-3" style="margin-bottom:28px;">
   <div class="kpi">
     <div class="k-label">Steuerbares Einkommen</div>
-    <div class="k-num">{% if latest %}{{ latest.taxable_income|chf }}{% else %}—{% endif %}</div>
+    <div class="k-num" style="font-size:32px;">{% if latest %}{{ latest.taxable_income|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.taxable_income|float) - (prev.taxable_income|float) %}
       <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
@@ -31,7 +31,7 @@
   </div>
   <div class="kpi">
     <div class="k-label">Steuerbares Vermögen</div>
-    <div class="k-num">{% if latest %}{{ latest.taxable_assets|chf }}{% else %}—{% endif %}</div>
+    <div class="k-num" style="font-size:32px;">{% if latest %}{{ latest.taxable_assets|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.taxable_assets|float) - (prev.taxable_assets|float) %}
       <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
@@ -41,7 +41,7 @@
   </div>
   <div class="kpi">
     <div class="k-label">Bezahlte Steuern</div>
-    <div class="k-num">{% if latest %}{{ latest.paid_taxes|chf }}{% else %}—{% endif %}</div>
+    <div class="k-num" style="font-size:32px;">{% if latest %}{{ latest.paid_taxes|chf }}{% else %}—{% endif %}</div>
     {% if latest and prev %}
       {% set d = (latest.paid_taxes|float) - (prev.paid_taxes|float) %}
       <div class="k-delta" style="color: {{ 'var(--success-text)' if d >= 0 else 'var(--muted)' }};">{{ '+' if d >= 0 else '−' }}{{ d|abs|chf_amount }} zur Vorperiode</div>
@@ -58,9 +58,9 @@
       Verlauf{% if data_points %} {{ (data_points|last).date|date_ch }} – {{ latest.date|date_ch }}{% endif %}
     </div>
     <div class="row" style="gap:16px; font-size:12px;">
-      <span class="row" style="gap:6px;"><span style="width:10px; height:10px; border-radius:2px; background:#141312;"></span>Einkommen</span>
-      <span class="row" style="gap:6px;"><span style="width:10px; height:10px; border-radius:2px; background:oklch(0.66 0.14 152);"></span>Vermögen</span>
-      <span class="row" style="gap:6px;"><span style="width:10px; height:10px; border-radius:2px; background:#B8B4AC;"></span>Steuern</span>
+      <span class="row" style="gap:6px;"><span style="width:10px; height:2px; border-radius:1px; background:#141312;"></span>Einkommen</span>
+      <span class="row" style="gap:6px;"><span style="width:10px; height:2px; border-radius:1px; background:oklch(0.66 0.14 152);"></span>Vermögen</span>
+      <span class="row" style="gap:6px;"><span style="width:10px; height:2px; border-radius:1px; background:#B8B4AC;"></span>Steuern</span>
     </div>
   </div>
   {% if data_points %}

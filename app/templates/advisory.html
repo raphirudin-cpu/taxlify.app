@@ -44,14 +44,14 @@
         <div style="min-width:0;">
           <div class="text-action" style="font-size:16px; font-weight:600; color:var(--ink);"
                onclick="openAdvisorDetails('{{ advisor.id }}')">{{ advisor.name }}</div>
-          <div class="muted" style="font-size:13px;">{{ advisor.city or 'Schweiz' }}</div>
+          <div class="muted" style="font-size:13px;">{{ advisor.city or 'Schweiz' }}{% if advisor.since_year %} · seit {{ advisor.since_year }}{% endif %}</div>
         </div>
       </div>
 
       <div class="row" style="gap:8px; align-items:center;">
         <span style="color:var(--ink); letter-spacing:2px;">{% for i in range(stars) %}★{% endfor %}{% for i in range(5 - stars) %}☆{% endfor %}</span>
         {% if rating > 0 %}
-          <span class="muted tnum" style="font-size:13px;">{{ '%.1f'|format(rating) }}</span>
+          <span class="muted tnum" style="font-size:13px;">{{ '%.1f'|format(rating) }}{% if advisor.review_count %} · {{ advisor.review_count }} Bewertung{{ 'en' if advisor.review_count != 1 else '' }}{% endif %}</span>
         {% else %}
           <span class="muted" style="font-size:13px;">Noch keine Bewertungen</span>
         {% endif %}
