@@ -108,10 +108,19 @@ def view_documents(year):
         )
 
     from datetime import date
+    from app.models import DocumentAnalysis
+    from app.services.ai_intake import is_configured as ai_is_configured
+    analyses_by_doc = {}
+    doc_ids = [d.id for d in uploaded_documents]
+    if doc_ids:
+        for a in DocumentAnalysis.query.filter(DocumentAnalysis.required_document_id.in_(doc_ids)).all():
+            analyses_by_doc[a.required_document_id] = a
     return render_template(
         'view_documents.html',
         tax_year=tax_year,
         uploaded_documents=uploaded_documents,
         client_user=User.query.get(tax_year.user_id),
         today=date.today(),
+        analyses_by_doc=analyses_by_doc,
+        ai_enabled=(current_user.role in ('advisor', 'admin') and ai_is_configured()),
     )

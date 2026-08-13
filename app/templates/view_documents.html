@@ -25,18 +25,48 @@
       {% if uploaded_documents|length == 0 %}
         <div class="empty">Keine Dokumente hochgeladen.</div>
       {% else %}
-        <div class="thead" style="grid-template-columns:70px 1fr 170px 120px;">
-          <div>ID</div><div>Dokument</div><div>Hochgeladen am</div><div class="right">Download</div>
+        <div class="thead" style="grid-template-columns:60px 1fr 150px 200px;">
+          <div>ID</div><div>Dokument</div><div>Hochgeladen</div><div class="right">Aktionen</div>
         </div>
         {% for document in uploaded_documents %}
-        <div class="trow" style="grid-template-columns:70px 1fr 170px 120px;">
+        {% set analysis = analyses_by_doc.get(document.id) %}
+        <div class="trow" style="grid-template-columns:60px 1fr 150px 200px;">
           <div class="cell-muted tnum">{{ document.id }}</div>
           <div class="cell-strong">{{ document.file_path.split('/')[-1] }}</div>
           <div class="cell-muted">{{ document.uploaded_on|date_ch }}</div>
           <div class="right">
-            <a class="text-action" href="{{ url_for('documents.view_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Herunterladen</a>
+            <div class="row" style="gap:10px; justify-content:flex-end; align-items:center;">
+              {% if ai_enabled %}
+              <form action="{{ url_for('ai_intake.analyze') }}" method="post" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="required_document_id" value="{{ document.id }}">
+                <button type="submit" class="text-action">{{ 'Neu analysieren' if analysis else 'KI-Analyse' }}</button>
+              </form>
+              {% endif %}
+              <a class="text-action" href="{{ url_for('documents.view_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Herunterladen</a>
+            </div>
           </div>
         </div>
+        {% if analysis %}
+        <div class="trow" style="grid-template-columns:1fr; background:var(--sunken-2);">
+          <div style="padding:4px 2px;">
+            {% set cc = {'hoch':'success','mittel':'warning','niedrig':'danger'} %}
+            <div class="row" style="gap:8px; align-items:center; margin-bottom:6px;">
+              <span class="pill {{ cc.get(analysis.confidence, '') }}">{{ analysis.doc_type or 'Unbekannt' }}</span>
+              <span class="cell-muted" style="font-size:12px;">KI · Zuversicht {{ analysis.confidence or '—' }}</span>
+            </div>
+            {% if analysis.summary %}<div style="font-size:13px; margin-bottom:8px;">{{ analysis.summary }}</div>{% endif %}
+            {% if analysis.fields %}
+            <div class="row" style="flex-wrap:wrap; gap:6px 20px;">
+              {% for f in analysis.fields %}
+                <div style="font-size:12px;"><span class="cell-muted">{{ f.label }}:</span> <strong>{{ f.value }}</strong></div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            <div class="cell-muted" style="font-size:11px; margin-top:6px;">Von der KI erzeugt – bitte prüfen.</div>
+          </div>
+        </div>
+        {% endif %}
         {% endfor %}
       {% endif %}
     </div>

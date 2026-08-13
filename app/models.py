@@ -234,6 +234,32 @@ class TimeEntry(db.Model):
             Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+class DocumentAnalysis(db.Model):
+    """AI classification + field extraction for one uploaded document.
+    One row per RequiredDocument (re-analysis replaces the previous row)."""
+    __tablename__ = 'document_analyses'
+
+    id = db.Column(db.Integer, primary_key=True)
+    required_document_id = db.Column(db.Integer, db.ForeignKey('required_document.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    tax_year = db.Column(db.Integer, nullable=False)
+    doc_type = db.Column(db.String(100), nullable=True)      # e.g. 'Lohnausweis'
+    summary = db.Column(db.Text, nullable=True)              # one-line German summary
+    fields_json = db.Column(db.Text, nullable=True)          # JSON: [{label, value}, ...]
+    confidence = db.Column(db.String(20), nullable=True)     # 'hoch' | 'mittel' | 'niedrig'
+    model = db.Column(db.String(60), nullable=True)          # model id used
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    @property
+    def fields(self):
+        import json
+        try:
+            return json.loads(self.fields_json) if self.fields_json else []
+        except (ValueError, TypeError):
+            return []
+
+
 class AuditLog(db.Model):
     """Activity trail of user actions (who did what, when). Best-effort — writing
     an entry never blocks the underlying request (see app.audit.log_action)."""

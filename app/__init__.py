@@ -137,6 +137,7 @@ def create_app(config_class=None):
     from app.routes.admin_dashboard_routes import admin_dashboard_bp
     from app.routes.admin_clients_routes import admin_clients_bp
     from app.routes.time_tracking_routes import time_bp
+    from app.routes.ai_intake_routes import ai_intake_bp
 
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp)
@@ -172,6 +173,7 @@ def create_app(config_class=None):
     app.register_blueprint(admin_dashboard_bp)
     app.register_blueprint(admin_clients_bp)
     app.register_blueprint(time_bp)
+    app.register_blueprint(ai_intake_bp)
 
     from flask_wtf.csrf import CSRFError
 

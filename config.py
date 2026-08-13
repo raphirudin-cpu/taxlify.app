@@ -84,6 +84,10 @@ class BaseConfig:
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
     LOG_DIR = os.environ.get("LOG_DIR", "logs")
 
+    # --- AI document intake (Anthropic) ---
+    ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")  # unset => AI analysis disabled
+    ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
+
     # --- CSRF ---
     WTF_CSRF_TIME_LIMIT = None  # tokens valid for the session lifetime
 
