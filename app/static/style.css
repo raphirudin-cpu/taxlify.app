@@ -208,7 +208,7 @@ input::placeholder, textarea::placeholder { color: var(--muted-light); }
 }
 .toggle .knob {
   position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 999px;
-  background: #fff; transition: transform .12s ease;
+  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .12s ease;
 }
 .toggle input:checked + .track { background: var(--black); }
 .toggle input:checked + .track + .knob { transform: translateX(18px); }

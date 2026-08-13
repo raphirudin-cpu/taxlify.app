@@ -67,11 +67,14 @@
       {% if quote_requests %}Offerte für {{ quote_requests[0].name }} {{ quote_requests[0].surname }}{% else %}Wähle eine Anfrage{% endif %}
     </div>
 
+    {% if not quote_requests %}
+      <div class="empty" style="padding:24px 0;">Aktuell keine offenen Anfragen. Sobald eine Anfrage eingeht, kannst du hier eine Offerte erstellen.</div>
+    {% else %}
     <form id="quoteForm" action="{{ url_for('submit_quote.submit_quote') }}" method="post" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-      <input type="hidden" name="id" id="quote_id" value="{{ quote_requests[0].id if quote_requests else '' }}">
-      <input type="hidden" name="user_id" id="user_id" value="{{ quote_requests[0].user_id if quote_requests else '' }}">
-      <input type="hidden" name="tax_year" id="tax_year" value="{{ quote_requests[0].tax_year if quote_requests else '' }}">
+      <input type="hidden" name="id" id="quote_id" value="{{ quote_requests[0].id }}">
+      <input type="hidden" name="user_id" id="user_id" value="{{ quote_requests[0].user_id }}">
+      <input type="hidden" name="tax_year" id="tax_year" value="{{ quote_requests[0].tax_year }}">
 
       <div class="field">
         <label for="quote_amount">Betrag (CHF)</label>
@@ -96,6 +99,7 @@
 
       <button type="submit" class="btn btn-primary btn-block" style="height:42px;">Offerte senden</button>
     </form>
+    {% endif %}
   </div>
 
 </div>

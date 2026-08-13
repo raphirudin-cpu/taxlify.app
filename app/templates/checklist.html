@@ -12,7 +12,7 @@
       <div style="font-size:13px; font-weight:500;">Frage {{ step }} von {{ total }}</div>
       <div class="muted" style="font-size:12px;">Steuerjahr {{ tax_year.year }}</div>
     </div>
-    <div class="track"><div class="fill" style="width: {{ ((step / total) * 100)|round(0, 'floor') }}%;"></div></div>
+    <div class="track tall"><div class="fill" style="width: {{ [((step / total) * 100)|round(0, 'floor'), 2]|max }}%;"></div></div>
   </div>
 
   {# Question card #}
