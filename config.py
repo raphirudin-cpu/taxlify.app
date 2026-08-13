@@ -88,6 +88,12 @@ class BaseConfig:
     ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")  # unset => AI analysis disabled
     ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-5")
 
+    # --- Auth ---
+    # When true, new accounts are confirmed on registration (no confirmation
+    # email needed). Defaults off in production; DevelopmentConfig flips it on so
+    # local sign-up works without a running Celery worker + mail server.
+    AUTO_CONFIRM_EMAIL = os.environ.get("AUTO_CONFIRM_EMAIL", "false").lower() == "true"
+
     # --- CSRF ---
     WTF_CSRF_TIME_LIMIT = None  # tokens valid for the session lifetime
 
@@ -99,6 +105,10 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SESSION_COOKIE_SECURE = False
+    # No Celery/Redis + mail server locally → confirm accounts on sign-up so
+    # you can log in immediately. Override with AUTO_CONFIRM_EMAIL=false to
+    # exercise the real confirmation flow.
+    AUTO_CONFIRM_EMAIL = os.environ.get("AUTO_CONFIRM_EMAIL", "true").lower() == "true"
 
 
 class ProductionConfig(BaseConfig):

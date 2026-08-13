@@ -62,6 +62,7 @@ def register():
         hashed_password = generate_password_hash(password)
         is_retail = (account_type == 'individual')
         is_institution = (account_type == 'institution')
+        auto_confirm = current_app.config.get('AUTO_CONFIRM_EMAIL', False)
 
         new_user = User(
             email=email,
@@ -70,10 +71,16 @@ def register():
             country=country,
             retail=is_retail,
             institutional=is_institution,
-            email_confirmed=False
+            email_confirmed=auto_confirm,
         )
         db.session.add(new_user)
         db.session.commit()
+
+        log_action('auth.register', target_type='user', target_id=new_user.id, detail=role, user_id=new_user.id)
+
+        if auto_confirm:
+            flash('Registrierung erfolgreich. Du kannst dich jetzt anmelden.', 'success')
+            return redirect(url_for('auth.login'))
 
         from app.utils.email_tasks import send_confirmation_email, send_welcome_email
 
@@ -86,7 +93,6 @@ def register():
             current_app.logger.error(f"Failed to queue emails for {email}: {str(e)}")
             flash('E-Mails konnten nicht gesendet werden. Bitte kontaktiere den Support.', 'error')
 
-        log_action('auth.register', target_type='user', target_id=new_user.id, detail=role, user_id=new_user.id)
         flash('Registrierung erfolgreich. Bitte bestätige deine E-Mail-Adresse.', 'success')
         return redirect(url_for('auth.login'))
 

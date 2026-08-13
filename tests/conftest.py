@@ -15,6 +15,10 @@ os.environ["DATABASE_URL"] = "sqlite:///" + _DB_PATH
 os.environ.setdefault("MAIL_USERNAME", "test@example.com")
 os.environ.setdefault("MAIL_PASSWORD", "test-password")
 os.environ["APP_ENV"] = "testing"
+# Neutralize any real .env values so tests are deterministic. load_dotenv()
+# runs with override=False, so pre-setting these here wins over the .env file.
+os.environ["ANTHROPIC_API_KEY"] = ""
+os.environ["AUTO_CONFIRM_EMAIL"] = "false"
 
 import pytest  # noqa: E402
 

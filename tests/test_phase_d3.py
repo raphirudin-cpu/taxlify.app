@@ -13,7 +13,8 @@ from app.models import RequiredDocument, DocumentAnalysis
 def test_analyze_raises_when_not_configured(app):
     from app.services.ai_intake import analyze_document, AINotConfigured
     with app.app_context():
-        # TestingConfig sets no ANTHROPIC_API_KEY
+        # Force the key empty regardless of any .env loaded into the environment.
+        app.config["ANTHROPIC_API_KEY"] = None
         with pytest.raises(AINotConfigured):
             analyze_document("/tmp/whatever.pdf")
 
