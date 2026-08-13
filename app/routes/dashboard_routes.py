@@ -79,7 +79,7 @@ def _hero_action(open_years):
             return {
                 "headline": f"Offerte für {t.year} prüfen",
                 "sub": "Eine Offerte wartet auf deine Entscheidung.",
-                "url": url_for("dashboard.dashboard"),
+                "url": f"#tj-{t.year}",
                 "cta": "Offerte prüfen",
             }
     # 3) checklist incomplete

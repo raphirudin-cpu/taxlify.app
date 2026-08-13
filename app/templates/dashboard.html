@@ -35,7 +35,7 @@
 <div class="section-label">Offene Steuerjahre</div>
 <div class="stack">
 {% for c in year_cards %}
-  <div class="card">
+  <div class="card" id="tj-{{ c.year }}">
     <div class="between" style="align-items:flex-start;">
       <div style="display:flex; align-items:baseline; gap:16px;">
         <div style="font-size:34px; font-weight:600; letter-spacing:-0.03em;" class="tnum">{{ c.year }}</div>
