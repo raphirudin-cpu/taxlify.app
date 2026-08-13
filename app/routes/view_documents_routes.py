@@ -49,7 +49,7 @@ def view_documents(year):
         ).first()
         if document:
             file_path = document.file_path
-            if not os.path.exists(file_path):
+            if not file_path or not os.path.exists(file_path):
                 flash("Datei nicht gefunden.", "error")
                 return redirect(url_for('documents.view_documents', year=tax_year.year, user_id=tax_year.user_id))
             document.downloaded_on = datetime.utcnow()

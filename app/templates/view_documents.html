@@ -30,20 +30,25 @@
         </div>
         {% for document in uploaded_documents %}
         {% set analysis = analyses_by_doc.get(document.id) %}
+        {% set fname = document.file_path.split('/')[-1] if document.file_path else (document.document_name or '—') %}
         <div class="trow" style="grid-template-columns:60px 1fr 150px 200px;">
           <div class="cell-muted tnum">{{ document.id }}</div>
-          <div class="cell-strong">{{ document.file_path.split('/')[-1] }}</div>
-          <div class="cell-muted">{{ document.uploaded_on|date_ch }}</div>
+          <div class="cell-strong">{{ fname }}</div>
+          <div class="cell-muted">{% if document.file_path %}{{ document.uploaded_on|date_ch }}{% else %}<span class="cell-muted">Ausstehend</span>{% endif %}</div>
           <div class="right">
             <div class="row" style="gap:10px; justify-content:flex-end; align-items:center;">
-              {% if ai_enabled %}
-              <form action="{{ url_for('ai_intake.analyze') }}" method="post" style="display:inline;">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="required_document_id" value="{{ document.id }}">
-                <button type="submit" class="text-action">{{ 'Neu analysieren' if analysis else 'KI-Analyse' }}</button>
-              </form>
+              {% if document.file_path %}
+                {% if ai_enabled %}
+                <form action="{{ url_for('ai_intake.analyze') }}" method="post" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <input type="hidden" name="required_document_id" value="{{ document.id }}">
+                  <button type="submit" class="text-action">{{ 'Neu analysieren' if analysis else 'KI-Analyse' }}</button>
+                </form>
+                {% endif %}
+                <a class="text-action" href="{{ url_for('documents.view_documents', year=tax_year.year, download_id=document.id) }}" download="{{ fname }}">Herunterladen</a>
+              {% else %}
+                <span class="cell-muted">Noch nicht hochgeladen</span>
               {% endif %}
-              <a class="text-action" href="{{ url_for('documents.view_documents', year=tax_year.year, download_id=document.id) }}" download="{{ document.file_path.split('/')[-1] }}">Herunterladen</a>
             </div>
           </div>
         </div>

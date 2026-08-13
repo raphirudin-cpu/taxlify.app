@@ -26,6 +26,9 @@ def analyze():
     if not doc:
         flash("Dokument nicht gefunden.", "error")
         return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    if not doc.file_path:
+        flash("Für dieses Dokument wurde noch keine Datei hochgeladen.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
     ty = TaxYear.query.filter_by(id=doc.tax_year_id).first()
     year = ty.year if ty else None
