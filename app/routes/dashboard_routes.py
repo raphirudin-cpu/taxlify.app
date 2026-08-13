@@ -64,16 +64,25 @@ def _rail(ty):
 
 def _hero_action(open_years):
     """Pick the single most urgent open action across all tax years."""
-    # 1) missing documents
+    # 1) additional documents requested by the advisor (separate upload flow)
     for t in open_years:
-        if t.status == "Additional documents requested" or (t.advisor_id and not t.uploaded_documents):
+        if t.status == "Additional documents requested":
+            return {
+                "headline": f"Zusätzliche Belege für {t.year} hochladen",
+                "sub": "Dein Treuhänder hat zusätzliche Unterlagen angefordert.",
+                "url": url_for("upload_additional_documents.upload_additional_documents", year=t.year),
+                "cta": "Belege hochladen",
+            }
+    # 2) initial documents missing
+    for t in open_years:
+        if t.advisor_id and not t.uploaded_documents:
             return {
                 "headline": f"Belege für {t.year} hochladen",
                 "sub": "Dein Treuhänder wartet auf deine Unterlagen.",
                 "url": url_for("upload_documents.upload_documents", year=t.year),
                 "cta": "Belege hochladen",
             }
-    # 2) quote to review
+    # 3) quote to review
     for t in open_years:
         if t.status == "Review Quote":
             return {
@@ -82,7 +91,7 @@ def _hero_action(open_years):
                 "url": f"#tj-{t.year}",
                 "cta": "Offerte prüfen",
             }
-    # 3) checklist incomplete
+    # 4) checklist incomplete
     for t in open_years:
         if not t.checklist_completed:
             return {
@@ -91,7 +100,7 @@ def _hero_action(open_years):
                 "url": url_for("checklist.checklist", year=t.year),
                 "cta": "Checkliste ausfüllen",
             }
-    # 4) draft to review
+    # 5) draft to review
     for t in open_years:
         if t.draft_tax_return_submitted and not t.draft_tax_return_approved:
             return {

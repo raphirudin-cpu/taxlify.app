@@ -71,6 +71,7 @@
       if (!uploadBtn) return;
       var uploadUrl = JSON.parse(document.getElementById("upload-url").textContent.trim());
       var docs = JSON.parse(document.getElementById("additional-documents-data").textContent);
+      var csrfToken = document.querySelector('#upload-additional-form input[name="csrf_token"]').value;
       var allDropzones = [];
       setTimeout(function () {
         docs.forEach(function (doc) {
@@ -79,10 +80,14 @@
           new Dropzone(el, {
             url: uploadUrl, paramName: "file", autoProcessQueue: false, uploadMultiple: false,
             addRemoveLinks: true, clickable: el, maxFilesize: 5, acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+            headers: { "X-CSRFToken": csrfToken },
             init: function () {
               this.complete = false;
               allDropzones.push(this);
-              this.on("sending", function (file, xhr, formData) { formData.append("id", doc.id); });
+              this.on("sending", function (file, xhr, formData) {
+                formData.append("id", doc.id);
+                formData.append("csrf_token", csrfToken);
+              });
               this.on("queuecomplete", function () {
                 this.complete = true;
                 if (allDropzones.filter(function(dz){return dz.files.length>0;}).every(function (dz) { return dz.complete; })) {
