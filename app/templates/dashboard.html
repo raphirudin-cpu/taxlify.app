@@ -59,6 +59,7 @@
             <button class="btn btn-primary btn-sm" type="submit">Offerte annehmen</button>
           </form>
         {% elif c.draft_pending %}
+          <a class="btn btn-secondary btn-sm" href="{{ url_for('dashboard.download_draft_tax_return', user_id=user.id, year=c.year) }}" target="_blank" rel="noopener">Entwurf prüfen</a>
           <button class="btn btn-secondary btn-sm" onclick="openRejectDraft('{{ c.year }}')">Entwurf ablehnen</button>
           <form method="post" action="{{ url_for('draft_tax_return_action.draft_tax_return_action') }}" style="display:inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
