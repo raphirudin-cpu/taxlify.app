@@ -26,7 +26,12 @@
             <img src="{{ url_for('admin_settings.uploaded_logo', advisor_id=advisor.id, filename=advisor.logo.split('/')[-1]) }}" alt="Logo">
           </div>
         {% endif %}
-        <input type="file" id="logo" name="logo" accept="image/*">
+        <label class="file-field">
+          <input type="file" id="logo" name="logo" accept="image/*"
+                 onchange="document.getElementById('logoName').textContent = (this.files[0] ? this.files[0].name : 'Keine Datei ausgewählt')">
+          <span class="file-btn">Datei wählen</span>
+          <span class="file-name" id="logoName">Keine Datei ausgewählt</span>
+        </label>
       </div>
 
       <div class="between" style="margin-top:20px;">

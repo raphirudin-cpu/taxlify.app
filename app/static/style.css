@@ -289,6 +289,20 @@ input::placeholder, textarea::placeholder { color: var(--muted-light); }
 .pill.has-tip:hover .tip, .pill.has-tip:focus .tip { opacity: 1; visibility: visible; }
 .pill.has-tip .tip strong { font-weight: 600; }
 
+/* Styled file input (hides the native control) */
+.file-field { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; }
+.file-field input[type="file"] {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); border: 0;
+}
+.file-field .file-btn {
+  height: 38px; display: inline-flex; align-items: center; padding: 0 16px;
+  border: 1px solid var(--border-strong); border-radius: 8px;
+  background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 500;
+}
+.file-field:hover .file-btn { background: var(--sunken); }
+.file-field .file-name { font-size: 13px; color: var(--muted); }
+
 /* Inline assignee picker in the advisor queue */
 .assign-select {
   height: 30px; max-width: 150px; padding: 0 8px;

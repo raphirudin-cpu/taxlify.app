@@ -170,33 +170,47 @@
     var taxableAssets = JSON.parse('{{ data_points | map(attribute="taxable_assets") | list | tojson | safe }}');
     var paidTaxes = JSON.parse('{{ data_points | map(attribute="paid_taxes") | list | tojson | safe }}');
 
+    var fmtCHF = function (v) { return "CHF " + Number(v).toLocaleString('de-CH'); };
+    // A single data point has no line to draw — show a visible marker instead.
+    var pr = dates.length < 2 ? 5 : 3;
+
     new Chart(canvas.getContext('2d'), {
       type: 'line',
       data: {
         labels: dates,
         datasets: [
-          { label: 'Einkommen', data: taxableIncome, borderColor: '#141312', backgroundColor: '#141312', pointRadius: 3, borderWidth: 2, tension: 0.25, fill: false },
-          { label: 'Vermögen', data: taxableAssets, borderColor: 'oklch(0.66 0.14 152)', backgroundColor: 'oklch(0.66 0.14 152)', pointRadius: 3, borderWidth: 2, tension: 0.25, fill: false },
-          { label: 'Steuern', data: paidTaxes, borderColor: '#B8B4AC', backgroundColor: '#B8B4AC', pointRadius: 3, borderWidth: 2, tension: 0.25, fill: false }
+          { label: 'Einkommen', data: taxableIncome, borderColor: '#141312', backgroundColor: 'rgba(20,19,18,0.05)', pointBackgroundColor: '#141312', pointRadius: pr, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: true },
+          { label: 'Vermögen', data: taxableAssets, borderColor: 'oklch(0.66 0.14 152)', backgroundColor: 'oklch(0.66 0.14 152)', pointRadius: pr, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false },
+          { label: 'Steuern', data: paidTaxes, borderColor: '#B8B4AC', backgroundColor: '#B8B4AC', pointRadius: pr, pointHoverRadius: 6, borderWidth: 2, tension: 0.25, fill: false }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#141312', padding: 10, cornerRadius: 6,
+            callbacks: { label: function (c) { return c.dataset.label + ': ' + fmtCHF(c.parsed.y); } }
+          }
+        },
         scales: {
           x: {
             type: 'time',
             time: { unit: 'year', displayFormats: { year: 'YYYY' } },
             grid: { display: false },
             border: { color: '#E5E2DC' },
-            ticks: { color: '#7A776F' }
+            ticks: { color: '#7A776F', font: { size: 12 } }
           },
           y: {
             beginAtZero: true,
-            grid: { display: false },
+            grid: { color: '#E5E2DC', drawTicks: false },
             border: { display: false },
-            ticks: { color: '#7A776F' }
+            ticks: {
+              color: '#7A776F', font: { size: 12 }, maxTicksLimit: 6, padding: 8,
+              callback: function (v) { return fmtCHF(v); }
+            }
           }
         }
       }

@@ -122,7 +122,7 @@ def billing_update():
         db.session.add(purchase)
 
         amount = plan.monthly_price
-        desc   = f"{plan.base_slots}-slot package for {tax_year}"
+        desc   = f"{plan.name}-Paket ({plan.base_slots} Slots) für {tax_year}"
         flash(f"{plan.name} für {tax_year} gekauft: {amount:.2f}", "success")
 
     # CASE 2: adding extra slots to existing year
@@ -150,7 +150,7 @@ def billing_update():
         amount = slot_rate * extra_slots
         purchase.slots += extra_slots
 
-        desc = f"{extra_slots} extra slot(s) for {tax_year}"
+        desc = f"{extra_slots} zusätzliche Slots für {tax_year}"
         flash(f"{extra_slots} Slots zu {tax_year} hinzugefügt @ {slot_rate:.2f} je: {amount:.2f}", "success")
 
     # Record a one-time invoice
