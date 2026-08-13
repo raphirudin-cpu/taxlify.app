@@ -1,0 +1,147 @@
+{% extends "app_base.html" %}
+{% block title %}Zeit & Rechnungen · Taxlify{% endblock %}
+{% block topbar_title %}Zeit & Rechnungen{% endblock %}
+{% block subtitle %}<span class="subtitle">{{ entries|length }} Zeiteinträge</span>{% endblock %}
+
+{% block content %}
+
+{# ---- Zeit erfassen ---- #}
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title" style="margin-bottom:16px;">Zeit erfassen</div>
+  {% if engagements %}
+  <form action="{{ url_for('time_tracking.add_entry') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <div class="row" style="gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="field" style="flex:2; min-width:200px; margin-bottom:0;">
+        <label for="engagement">Mandat</label>
+        <select id="engagement" name="engagement" class="assign-select" style="max-width:none; width:100%; height:38px;" required>
+          {% for e in engagements %}
+            <option value="{{ e.user_id }}:{{ e.year }}">{{ e.label }} · {{ e.year }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" style="width:130px; margin-bottom:0;">
+        <label for="spent_on">Datum</label>
+        <input type="date" id="spent_on" name="spent_on" value="{{ today.isoformat() }}">
+      </div>
+      <div class="field" style="width:110px; margin-bottom:0;">
+        <label for="minutes">Minuten</label>
+        <input type="number" id="minutes" name="minutes" min="1" step="1" required>
+      </div>
+      <div class="field" style="width:120px; margin-bottom:0;">
+        <label for="rate">Ansatz CHF/h</label>
+        <input type="number" id="rate" name="rate" min="0" step="0.01" value="{{ default_rate }}" required>
+      </div>
+      <div class="field" style="flex:2; min-width:200px; margin-bottom:0;">
+        <label for="description">Beschreibung</label>
+        <input type="text" id="description" name="description" maxlength="255" required placeholder="z. B. Belege gesichtet, Rückfragen">
+      </div>
+      <button type="submit" class="btn btn-primary">Erfassen</button>
+    </div>
+  </form>
+  {% else %}
+    <div class="empty">Noch keine Mandate — sobald ein Kunde zugewiesen ist, kannst du Zeit erfassen.</div>
+  {% endif %}
+</div>
+
+{# ---- Offen zur Abrechnung ---- #}
+{% if unbilled_groups %}
+<div class="section-label">Offen zur Abrechnung</div>
+<div class="dtable" style="margin-bottom:28px;">
+  <div class="thead" style="grid-template-columns:1fr 80px 120px 140px 160px;">
+    <div>Mandat</div><div>Jahr</div><div>Stunden</div><div>Betrag</div><div class="right">Aktion</div>
+  </div>
+  {% for g in unbilled_groups %}
+  <div class="trow" style="grid-template-columns:1fr 80px 120px 140px 160px;">
+    <div class="cell-strong">{{ g.label }}</div>
+    <div class="tnum">{{ g.year }}</div>
+    <div class="tnum">{{ '%.2f'|format(g.minutes / 60) }} h</div>
+    <div class="tnum">CHF {{ g.amount|chf2 }}</div>
+    <div class="right">
+      {% if is_manager %}
+        <form action="{{ url_for('time_tracking.create_invoice') }}" method="post" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="user_id" value="{{ g.user_id }}">
+          <input type="hidden" name="tax_year" value="{{ g.year }}">
+          <button type="submit" class="btn btn-primary btn-sm">Rechnung erstellen</button>
+        </form>
+      {% else %}<span class="cell-muted">—</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ---- Zeiteinträge ---- #}
+<div class="section-label">Zeiteinträge</div>
+<div class="dtable" style="margin-bottom:28px;">
+  <div class="thead" style="grid-template-columns:100px 1fr 70px 1fr 90px 110px 110px 60px;">
+    <div>Datum</div><div>Mandat</div><div>Jahr</div><div>Beschreibung</div><div>Dauer</div><div>Ansatz</div><div>Betrag</div><div></div>
+  </div>
+  {% for e in entries %}
+  <div class="trow" style="grid-template-columns:100px 1fr 70px 1fr 90px 110px 110px 60px;">
+    <div class="cell-muted">{{ e.spent_on|date_ch }}</div>
+    <div class="cell-strong">{{ e.client }}<div class="cell-muted" style="font-size:12px;">{{ e.author }}</div></div>
+    <div class="tnum">{{ e.year }}</div>
+    <div>{{ e.description }}</div>
+    <div class="tnum">{{ '%.2f'|format(e.minutes / 60) }} h</div>
+    <div class="tnum">CHF {{ e.rate|chf2 }}</div>
+    <div class="tnum">CHF {{ e.amount|chf2 }}{% if e.billed %}<div class="cell-muted" style="font-size:11px;">abgerechnet</div>{% endif %}</div>
+    <div class="right">
+      {% if not e.billed %}
+        <form action="{{ url_for('time_tracking.delete_entry', entry_id=e.id) }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="text-action text-danger" onclick="return confirm('Eintrag löschen?')">×</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="trow" style="grid-template-columns:1fr;"><div class="cell-muted">Noch keine Zeiteinträge.</div></div>
+  {% endfor %}
+</div>
+
+{# ---- Rechnungen ---- #}
+<div class="section-label">Rechnungen</div>
+<div class="dtable">
+  <div class="thead" style="grid-template-columns:110px 1fr 80px 120px 140px 130px 1fr;">
+    <div>Erstellt</div><div>Mandat</div><div>Jahr</div><div>Stunden</div><div>Betrag</div><div>Status</div><div class="right">Aktion</div>
+  </div>
+  {% for i in invoices %}
+  <div class="trow" style="grid-template-columns:110px 1fr 80px 120px 140px 130px 1fr;">
+    <div class="cell-muted">{{ i.created_at|date_ch }}</div>
+    <div class="cell-strong">{{ i.client }}</div>
+    <div class="tnum">{{ i.year }}</div>
+    <div class="tnum">{{ '%.2f'|format(i.minutes / 60) }} h</div>
+    <div class="tnum">CHF {{ i.amount|chf2 }}</div>
+    <div>
+      {% set st = {'offen':'warning','bezahlt':'success','storniert':'danger'} %}
+      <span class="pill {{ st[i.status] }}">{{ i.status|capitalize }}</span>
+    </div>
+    <div class="right">
+      {% if is_manager %}
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+        {% if i.status != 'bezahlt' %}
+          <form action="{{ url_for('time_tracking.set_invoice_status', invoice_id=i.id) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="status" value="bezahlt">
+            <button type="submit" class="btn btn-secondary btn-sm">Bezahlt</button>
+          </form>
+        {% endif %}
+        {% if i.status != 'storniert' %}
+          <form action="{{ url_for('time_tracking.set_invoice_status', invoice_id=i.id) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="status" value="storniert">
+            <button type="submit" class="text-action text-danger" onclick="return confirm('Rechnung stornieren? Die Zeiteinträge werden wieder freigegeben.')">Stornieren</button>
+          </form>
+        {% endif %}
+        </div>
+      {% else %}<span class="cell-muted">—</span>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="trow" style="grid-template-columns:1fr;"><div class="cell-muted">Noch keine Rechnungen.</div></div>
+  {% endfor %}
+</div>
+
+{% endblock %}

@@ -42,6 +42,14 @@ def advisor_settings():
         advisor.website = website
         advisor.email   = company_email
 
+        rate_raw = request.form.get('default_hourly_rate')
+        if rate_raw not in (None, ''):
+            from decimal import Decimal, InvalidOperation
+            try:
+                advisor.default_hourly_rate = Decimal(str(rate_raw).replace(',', '.'))
+            except (InvalidOperation, TypeError):
+                pass
+
         # Handle logo upload
         if 'logo' in request.files:
             logo_file = request.files['logo']

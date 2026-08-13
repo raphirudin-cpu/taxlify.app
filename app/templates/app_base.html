@@ -30,6 +30,7 @@
         <a class="nav-item {{ 'active' if ep in ['admin_clients.admin_clients', 'admin_clients.client_profile'] }}" href="{{ url_for('admin_clients.admin_clients') }}">Kunden</a>
         <a class="nav-item {{ 'active' if ep == 'advisor_quotes.advisor_quotes' }}" href="{{ url_for('advisor_quotes.advisor_quotes') }}">Offerten</a>
         <a class="nav-item {{ 'active' if ep == 'advisor_advisors.advisors' }}" href="{{ url_for('advisor_advisors.advisors') }}">Treuhänder</a>
+        <a class="nav-item {{ 'active' if ep == 'time_tracking.index' }}" href="{{ url_for('time_tracking.index') }}">Zeit &amp; Rechnungen</a>
         <a class="nav-item {{ 'active' if ep == 'billing.billing_index' }}" href="{{ url_for('billing.billing_index') }}">Abrechnung</a>
         <a class="nav-item {{ 'active' if ep == 'admin_settings.advisor_settings' }}" href="{{ url_for('admin_settings.advisor_settings') }}">Einstellungen</a>
 
@@ -39,6 +40,7 @@
         <a class="nav-item {{ 'active' if ep == 'advisor_quotes.advisor_quotes' }}" href="{{ url_for('advisor_quotes.advisor_quotes') }}">Offerten</a>
         <a class="nav-item {{ 'active' if ep == 'advisor_advisors.advisors' }}" href="{{ url_for('advisor_advisors.advisors') }}">Treuhänder</a>
         <a class="nav-item {{ 'active' if ep == 'advisor_tips_news.tips_news' }}" href="{{ url_for('advisor_tips_news.tips_news') }}">Unterlagen</a>
+        <a class="nav-item {{ 'active' if ep == 'time_tracking.index' }}" href="{{ url_for('time_tracking.index') }}">Zeit &amp; Rechnungen</a>
         <a class="nav-item {{ 'active' if ep == 'advisor_settings.advisor_settings' }}" href="{{ url_for('advisor_settings.advisor_settings') }}">Einstellungen</a>
       {% endif %}
     </nav>

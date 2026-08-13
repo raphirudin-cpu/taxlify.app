@@ -116,6 +116,7 @@ class Advisor(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     website = db.Column(db.String(255), nullable=True)
     rating = db.Column(db.Numeric(3,2), default=0.0)
+    default_hourly_rate = db.Column(db.Numeric(10,2), nullable=True)  # CHF/h prefilled on new time entries
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     # Removed relationship logic
@@ -190,6 +191,47 @@ class TaxYearExtension(db.Model):
     note = db.Column(db.String(255), nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ClientInvoice(db.Model):
+    """An invoice a firm issues to one of its clients for a tax year, generated
+    from the billable time logged against that engagement."""
+    __tablename__ = 'client_invoices'
+
+    id = db.Column(db.Integer, primary_key=True)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # client billed
+    tax_year = db.Column(db.Integer, nullable=False)
+    minutes_total = db.Column(db.Integer, nullable=False, default=0)
+    amount = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    status = db.Column(db.String(20), nullable=False, default='offen')  # offen | bezahlt | storniert
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class TimeEntry(db.Model):
+    """A unit of billable work logged against a client's tax year."""
+    __tablename__ = 'time_entries'
+
+    id = db.Column(db.Integer, primary_key=True)
+    advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)  # the firm
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)         # the client
+    tax_year = db.Column(db.Integer, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)        # who logged it
+    spent_on = db.Column(db.Date, nullable=False)
+    minutes = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    rate_chf = db.Column(db.Numeric(10, 2), nullable=False)                           # snapshot hourly rate
+    billed = db.Column(db.Boolean, nullable=False, default=False)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('client_invoices.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    @property
+    def amount(self):
+        """Billable amount in CHF for this entry (minutes / 60 * rate)."""
+        from decimal import Decimal, ROUND_HALF_UP
+        return (Decimal(self.minutes) / Decimal(60) * Decimal(self.rate_chf)).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 class AuditLog(db.Model):
