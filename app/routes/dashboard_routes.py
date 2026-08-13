@@ -97,7 +97,8 @@ def _hero_action(open_years):
             return {
                 "headline": f"Entwurf für {t.year} prüfen",
                 "sub": "Dein Treuhänder hat einen Entwurf eingereicht.",
-                "url": url_for("dashboard.dashboard"),
+                "url": url_for("dashboard.download_draft_tax_return",
+                               user_id=t.user_id, year=t.year),
                 "cta": "Entwurf prüfen",
             }
     return None
