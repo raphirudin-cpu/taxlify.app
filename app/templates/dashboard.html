@@ -67,6 +67,10 @@
             <input type="hidden" name="action" value="accept">
             <button class="btn btn-primary btn-sm" type="submit">Entwurf annehmen</button>
           </form>
+        {% elif c.needs_additional_docs %}
+          <a class="btn btn-primary btn-sm" href="{{ url_for('upload_additional_documents.upload_additional_documents', year=c.year) }}">Zusätzliche Belege hochladen</a>
+        {% elif c.needs_initial_docs %}
+          <a class="btn btn-primary btn-sm" href="{{ url_for('upload_documents.upload_documents', year=c.year) }}">Belege hochladen</a>
         {% elif c.pending_quote %}
           <button class="btn btn-secondary btn-sm" onclick="withdrawQuote('{{ c.id }}')">Anfrage zurückziehen</button>
         {% endif %}

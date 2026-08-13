@@ -186,6 +186,9 @@ def dashboard():
             "awaiting_decision": t.status == "Review Quote",
             "pending_quote": bool(quote and quote.quote_status == "Pending"),
             "draft_pending": bool(t.draft_tax_return_submitted and not t.draft_tax_return_approved),
+            "needs_additional_docs": t.status == "Additional documents requested",
+            "needs_initial_docs": bool(t.advisor_id and not t.uploaded_documents
+                                       and t.status != "Additional documents requested"),
             "quote_amount": quote.quote_amount if quote else None,
             "quote_advisor_id": quote.advisor_id if quote else None,
             "rail": _rail(t),
