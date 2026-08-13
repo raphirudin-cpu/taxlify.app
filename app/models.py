@@ -286,8 +286,13 @@ class Plan(db.Model):
 
 class Subscription(db.Model):
     __tablename__ = 'subscriptions'
+    # A firm buys slots per tax year, so one subscription per (user, tax_year) —
+    # NOT one per user (that capped advisors at a single year's slots).
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'tax_year', name='uq_subscription_user_year'),
+    )
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     plan_id = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False)
     slots = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
