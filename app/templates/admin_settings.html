@@ -52,19 +52,37 @@
           <label for="team_member_email">E-Mail</label>
           <input type="email" id="team_member_email" name="team_member_email" required>
         </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="team_member_role">Rolle</label>
+          <select id="team_member_role" name="team_member_role" class="assign-select" style="max-width:none; height:38px;">
+            <option value="staff">Mitarbeiter</option>
+            <option value="manager">Manager</option>
+          </select>
+        </div>
         <button type="submit" name="add_team_member" value="1" class="btn btn-primary">Hinzufügen</button>
       </div>
     </form>
+    <p class="cell-muted" style="font-size:12px; margin-top:8px;">Manager sehen alle Mandate und können zuweisen. Mitarbeiter sehen nur ihre zugewiesenen Mandate.</p>
 
     <div style="margin-top:16px;">
       {% for member in team_members %}
         <div class="between" style="padding:14px 0; {% if not loop.last %}border-bottom:1px solid var(--hairline-in);{% endif %}">
           <span style="font-size:14px;">{{ member.email }}</span>
-          <form action="{{ url_for('admin_settings.remove_team_member') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="member_id" value="{{ member.id }}">
-            <button type="submit" class="text-action text-danger" onclick="return confirm('Mitglied entfernen?')">Entfernen</button>
-          </form>
+          <div class="row" style="gap:12px; align-items:center;">
+            <form action="{{ url_for('admin_settings.set_member_role') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <input type="hidden" name="member_id" value="{{ member.id }}">
+              <select name="role" class="assign-select" onchange="this.form.submit()">
+                <option value="staff" {{ 'selected' if member.role != 'manager' else '' }}>Mitarbeiter</option>
+                <option value="manager" {{ 'selected' if member.role == 'manager' else '' }}>Manager</option>
+              </select>
+            </form>
+            <form action="{{ url_for('admin_settings.remove_team_member') }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <input type="hidden" name="member_id" value="{{ member.id }}">
+              <button type="submit" class="text-action text-danger" onclick="return confirm('Mitglied entfernen?')">Entfernen</button>
+            </form>
+          </div>
         </div>
       {% else %}
         <div class="empty">Noch keine Teammitglieder.</div>

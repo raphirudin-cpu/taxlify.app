@@ -93,6 +93,9 @@ def advisor_settings():
             return redirect(url_for('admin_settings.advisor_settings'))
 
         email = request.form.get('team_member_email')
+        role = request.form.get('team_member_role')
+        if role not in ('manager', 'staff'):
+            role = 'staff'
         # Check if already added for this advisor
         already = TeamMember.query.filter_by(email=email, advisor_id=advisor.id).first()
         # Check User exists and has advisor role
@@ -103,7 +106,7 @@ def advisor_settings():
         elif not user_exists:
             flash("Kein Treuhänder-Konto mit dieser E-Mail gefunden.", "danger")
         else:
-            tm = TeamMember(advisor_id=advisor.id, email=email)
+            tm = TeamMember(advisor_id=advisor.id, email=email, role=role)
             db.session.add(tm)
             try:
                 db.session.commit()
@@ -147,6 +150,32 @@ def remove_team_member():
         else:
             flash("Fehler beim Entfernen des Teammitglieds.", "danger")
 
+    return redirect(url_for('admin_settings.advisor_settings'))
+
+@admin_settings_bp.route('/set_member_role', methods=['POST'])
+@login_required
+@require_role('admin')
+def set_member_role():
+    advisor = current_advisor()
+    if not advisor:
+        flash("Zugriff verweigert.", "danger")
+        return redirect(url_for('admin_settings.advisor_settings'))
+
+    member_id = request.form.get('member_id')
+    role = request.form.get('role')
+    if role not in ('manager', 'staff'):
+        flash("Ungültige Rolle.", "danger")
+        return redirect(url_for('admin_settings.advisor_settings'))
+
+    member = TeamMember.query.filter_by(id=member_id, advisor_id=advisor.id).first()
+    if not member:
+        flash("Teammitglied nicht gefunden.", "danger")
+    else:
+        member.role = role
+        if commit_or_rollback():
+            flash("Rolle aktualisiert.", "success")
+        else:
+            flash("Fehler beim Speichern der Rolle.", "danger")
     return redirect(url_for('admin_settings.advisor_settings'))
 
 @admin_settings_bp.route('/uploads/<int:advisor_id>/Logo/<filename>')

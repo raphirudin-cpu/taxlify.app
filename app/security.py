@@ -16,7 +16,7 @@ from functools import wraps
 from flask import abort, current_app, send_file
 from flask_login import current_user
 
-from app.models import Advisor, Quote, TaxYear
+from app.models import Advisor, Quote, TaxYear, TeamMember, User
 
 
 def require_role(*roles):
@@ -44,35 +44,96 @@ def current_advisor():
     return Advisor.query.filter_by(user_id=current_user.id).first()
 
 
-def advisor_is_bound(customer_id, year):
-    """True if the current advisor is engaged on this client's tax year.
+def firm_advisor():
+    """Return the Advisor (firm) the current user belongs to, whether they own
+    the record or are a team member. None if unaffiliated."""
+    if not current_user.is_authenticated:
+        return None
+    owned = Advisor.query.filter_by(user_id=current_user.id).first()
+    if owned:
+        return owned
+    tm = TeamMember.query.filter_by(email=current_user.email).first()
+    if tm:
+        return Advisor.query.get(tm.advisor_id)
+    return None
 
-    Bound either because the client accepted this advisor's quote
-    (``TaxYear.advisor_id``) or because an active quote links them.
+
+def firm_team_role():
+    """The current user's role within their firm: 'owner' | 'manager' | 'staff' | None.
+    Whoever holds the Advisor record is the 'owner'; team members carry their own
+    'manager'/'staff' role."""
+    if not current_user.is_authenticated:
+        return None
+    if Advisor.query.filter_by(user_id=current_user.id).first():
+        return 'owner'
+    tm = TeamMember.query.filter_by(email=current_user.email).first()
+    return tm.role if tm else None
+
+
+def can_manage_firm():
+    """Owners and managers may manage the team and assign clients."""
+    return firm_team_role() in ('owner', 'manager')
+
+
+def firm_members(advisor):
+    """Users who can be assigned engagements in this firm: the owner plus every
+    team member that has an advisor-role account. Returns a list of Users."""
+    if not advisor:
+        return []
+    members = []
+    owner = User.query.get(advisor.user_id)
+    if owner:
+        members.append(owner)
+    emails = [tm.email for tm in TeamMember.query.filter_by(advisor_id=advisor.id).all()]
+    if emails:
+        for u in User.query.filter(User.email.in_(emails)).all():
+            if u.id != (owner.id if owner else None):
+                members.append(u)
+    return members
+
+
+def current_advisor_ids():
+    """All Advisor.ids the current user acts under: the firm they own plus every
+    firm they are a team member of. Empty if unaffiliated."""
+    if not current_user.is_authenticated:
+        return []
+    ids = set()
+    owned = Advisor.query.filter_by(user_id=current_user.id).first()
+    if owned:
+        ids.add(owned.id)
+    for tm in TeamMember.query.filter_by(email=current_user.email).all():
+        ids.add(tm.advisor_id)
+    return list(ids)
+
+
+def advisor_is_bound(customer_id, year):
+    """True if the current advisor (owner or team member) is engaged on this
+    client's tax year — via an assigned ``TaxYear.advisor_id`` or a linking quote.
     """
-    adv = current_advisor()
-    if not adv:
+    ids = current_advisor_ids()
+    if not ids:
         return False
     ty = TaxYear.query.filter_by(user_id=customer_id, year=year).first()
-    if ty and ty.advisor_id == adv.id:
+    if ty and ty.advisor_id in ids:
         return True
-    quote = Quote.query.filter_by(
-        user_id=customer_id, tax_year=year, advisor_id=adv.id
-    ).first()
-    return quote is not None
+    return Quote.query.filter(
+        Quote.user_id == customer_id, Quote.tax_year == year,
+        Quote.advisor_id.in_(ids)
+    ).first() is not None
 
 
 def advisor_is_client(customer_id):
-    """True if the current advisor is engaged with this client on ANY tax year
-    (via an assigned TaxYear or a quote). Used to gate client-level views that
-    aren't scoped to a single year.
+    """True if the current advisor's firm is engaged with this client on ANY tax
+    year (assigned TaxYear or a quote). Gates client-level views not scoped to a year.
     """
-    adv = current_advisor()
-    if not adv:
+    ids = current_advisor_ids()
+    if not ids:
         return False
-    if TaxYear.query.filter_by(user_id=customer_id, advisor_id=adv.id).first():
+    if TaxYear.query.filter(TaxYear.user_id == customer_id,
+                            TaxYear.advisor_id.in_(ids)).first():
         return True
-    return Quote.query.filter_by(user_id=customer_id, advisor_id=adv.id).first() is not None
+    return Quote.query.filter(Quote.user_id == customer_id,
+                              Quote.advisor_id.in_(ids)).first() is not None
 
 
 def tax_year_for_request(year, customer_id=None):

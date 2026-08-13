@@ -71,6 +71,7 @@
     <button type="button" class="btn btn-secondary btn-sm" data-filter="draft">Entwurf einreichen · {{ counts.draft }}</button>
     <button type="button" class="btn btn-secondary btn-sm" data-filter="final">Final einreichen · {{ counts.final }}</button>
     <button type="button" class="btn btn-secondary btn-sm" data-filter="blocked">Blockiert · {{ counts.blocked }}</button>
+    {% if is_manager %}<button type="button" class="btn btn-secondary btn-sm" data-filter="mine">Meine Fälle</button>{% endif %}
   </div>
   <input type="search" id="customerSearch" placeholder="Kunde suchen" style="width:240px; height:36px;">
 </div>
@@ -78,17 +79,18 @@
 {# ---- Queue table ---- #}
 <div class="section-label">Arbeitsvorrat</div>
 <div class="dtable" id="queueTable">
-  <div class="thead" style="grid-template-columns:220px 80px 1fr 150px 220px;">
-    <div>Kunde</div><div>Jahr</div><div>Status</div><div>Frist</div><div>Nächster Schritt</div>
+  <div class="thead" style="grid-template-columns:190px 60px 1fr 140px 160px 200px;">
+    <div>Kunde</div><div>Jahr</div><div>Status</div><div>Frist</div><div>Zugewiesen</div><div>Nächster Schritt</div>
   </div>
   {% for ty in pending_tax_years %}
     {% set s = stage(ty)|trim %}
     {% set is_blocked = s in ['await_docs', 'await_approve'] %}
     {% set dd = (ty.deadline - current_date).days if ty.deadline else none %}
     {% set urg = 'danger' if (dd is not none and dd < 0) else ('warning' if (dd is not none and dd <= 14) else '') %}
-    <div class="trow" style="grid-template-columns:220px 80px 1fr 150px 220px;"
+    <div class="trow" style="grid-template-columns:190px 60px 1fr 140px 160px 200px;"
          data-name="{{ (ty.user_surname ~ ' ' ~ ty.user_name)|lower }}"
          data-stage="{{ s }}"
+         data-assignee="{{ ty.assignee_id or '' }}"
          data-blocked="{{ '1' if is_blocked else '0' }}">
       <div class="cell-strong">{{ ty.user_surname }} {{ ty.user_name }}</div>
       <div class="tnum">{{ ty.year }}</div>
@@ -111,6 +113,23 @@
         {% else %}<span class="cell-muted">—</span>{% endif %}
         <div><span class="text-action" style="font-size:12px;"
              onclick="openExtend('{{ ty.user_id }}','{{ ty.year }}','{{ ty.deadline.isoformat() if ty.deadline else '' }}')">Frist verlängern</span></div>
+      </div>
+      <div>
+        {% if is_manager %}
+          <form action="{{ url_for('advisor_dashboard.assign_client') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="user_id" value="{{ ty.user_id }}">
+            <input type="hidden" name="tax_year" value="{{ ty.year }}">
+            <select name="assignee_id" class="assign-select" onchange="this.form.submit()">
+              <option value="">— nicht zugewiesen —</option>
+              {% for m in team %}
+                <option value="{{ m.id }}" {{ 'selected' if ty.assignee_id == m.id else '' }}>{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        {% else %}
+          {% if ty.assignee_name %}<span class="cell-muted">{{ ty.assignee_name }}</span>{% else %}<span class="cell-muted">—</span>{% endif %}
+        {% endif %}
       </div>
       <div>
         <div class="row" style="gap:8px; justify-content:flex-end;">
@@ -315,12 +334,15 @@
 
   // ---- Filter: pills (queue stage) + name search (queue + completed) ----
   var activeFilter = 'all';
+  var MY_ID = "{{ current_user.id }}";
   function applyFilters(){
     var q = (document.getElementById('customerSearch').value || '').toLowerCase().trim();
     document.querySelectorAll('#queueTable .trow[data-stage]').forEach(function(r){
       var okName = !q || (r.dataset.name || '').indexOf(q) !== -1;
       var okStage = activeFilter === 'all'
-        || (activeFilter === 'blocked' ? r.dataset.blocked === '1' : r.dataset.stage === activeFilter);
+        || (activeFilter === 'blocked' ? r.dataset.blocked === '1'
+            : (activeFilter === 'mine' ? r.dataset.assignee === MY_ID
+               : r.dataset.stage === activeFilter));
       r.style.display = (okName && okStage) ? '' : 'none';
     });
     document.querySelectorAll('#completedTable .trow[data-name]').forEach(function(r){

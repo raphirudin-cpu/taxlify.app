@@ -45,6 +45,7 @@ class TaxYear(db.Model):
     checklist_completed = db.Column(db.Boolean, default=False)
     uploaded_documents = db.Column(db.Boolean, default=False)
     advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=True)
+    assignee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # advisor User responsible for this engagement
     assigned_on = db.Column(db.DateTime, nullable=True)  # when the client accepted the advisor's quote
     draft_rejection_comment = db.Column(db.Text, nullable=True)  # client's reason for rejecting a draft
     last_reminded_at = db.Column(db.DateTime, nullable=True)  # advisor's last nudge to the client
@@ -162,6 +163,7 @@ class TeamMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     advisor_id = db.Column(db.Integer, db.ForeignKey('advisor.id'), nullable=False)
     email = db.Column(db.String(120), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='staff')  # 'manager' | 'staff'
 
     def __repr__(self):
         return f'<TeamMember {self.email}>'

@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from app.models import db, TaxYear, User, Quote, Advisor, Feedback, UserStatistics, TeamMember
-from app.security import require_role, current_advisor, advisor_is_bound, parse_int
+from app.security import (
+    require_role, current_advisor, advisor_is_bound, parse_int,
+    firm_advisor, can_manage_firm, firm_members,
+)
 from app.helpers import commit_or_rollback
 from app.audit import log_action
 from app.models import TaxYearExtension
@@ -50,15 +53,34 @@ def advisor_dashboard():
                     .order_by(TaxYearExtension.created_at).all()):
             extensions_by_ty.setdefault(ext.tax_year_id, []).append(ext)
 
+    # Team roster (owner + members) for assignment; managers/owner see everyone,
+    # staff see only their own engagements.
+    firm = firm_advisor()
+    is_manager = can_manage_firm()
+    members = firm_members(firm) if is_manager else []
+    team = [{'id': m.id, 'name': (m.firstname or m.email)} for m in members]
+    member_names = {}
+    if not is_manager:
+        # staff view still needs to label who owns each row (themselves)
+        for m in firm_members(firm):
+            member_names[m.id] = m.firstname or m.email
+    else:
+        member_names = {m['id']: m['name'] for m in team}
+
     tax_years = []
     for ty, user in rows:
         # Skip any entries lacking an advisor_id, though filter already applies
         if ty.advisor_id is None:
             continue
+        # Staff only see engagements assigned to them.
+        if not is_manager and ty.assignee_id != current_user.id:
+            continue
         exts = extensions_by_ty.get(ty.id, [])
         tax_years.append({
             'user_id': ty.user_id,
             'year': ty.year,
+            'assignee_id': ty.assignee_id,
+            'assignee_name': member_names.get(ty.assignee_id),
             'extensions': [
                 {'previous_deadline': e.previous_deadline,
                  'new_deadline': e.new_deadline,
@@ -93,7 +115,9 @@ def advisor_dashboard():
         completed_tax_years=completed_tax_years,
         current_date=date.today(),
         is_admin=(current_user.role == 'admin'),
-        is_team_member=(current_user.role == 'advisor')
+        is_team_member=(current_user.role == 'advisor'),
+        is_manager=is_manager,
+        team=team,
     )
 
 @advisor_dashboard_bp.route('/advisor/view_feedback')
@@ -236,6 +260,44 @@ def remind_client():
     commit_or_rollback()
     log_action('client.remind', target_type='tax_year', target_id=year, detail=kind)
     flash("Erinnerung gesendet.", "success")
+    return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+
+@advisor_dashboard_bp.route('/advisor/assign', methods=['POST'])
+@login_required
+@require_role('advisor', 'admin')
+def assign_client():
+    """Assign (or unassign) an engagement to a team member. Managers/owner only."""
+    if not can_manage_firm():
+        abort(403)
+    user_id = parse_int(request.form.get('user_id'))
+    year = parse_int(request.form.get('tax_year'))
+    assignee_id = parse_int(request.form.get('assignee_id'))  # None/empty -> unassign
+    if user_id is None or year is None:
+        flash("Fehlende Angaben.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+    if not advisor_is_bound(user_id, year):
+        abort(403)
+
+    ty = TaxYear.query.filter_by(user_id=user_id, year=year).first()
+    if not ty:
+        flash("Steuerjahr nicht gefunden.", "error")
+        return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+    # Validate the assignee belongs to this firm (or clear the assignment).
+    if assignee_id is not None:
+        valid_ids = {m.id for m in firm_members(firm_advisor())}
+        if assignee_id not in valid_ids:
+            flash("Unbekanntes Teammitglied.", "error")
+            return redirect(url_for('advisor_dashboard.advisor_dashboard'))
+
+    ty.assignee_id = assignee_id
+    if commit_or_rollback():
+        log_action('client.assign', target_type='tax_year', target_id=year,
+                   detail=f"assignee={assignee_id}")
+        flash("Zuweisung aktualisiert.", "success")
+    else:
+        flash("Zuweisung fehlgeschlagen.", "error")
     return redirect(url_for('advisor_dashboard.advisor_dashboard'))
 
 
