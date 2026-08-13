@@ -1,6 +1,6 @@
 """Phase B: assignment date, reject-with-comment, draft review."""
 from app import db as _db
-from app.models import TaxYear
+from app.models import TaxYear, Quote
 
 
 def test_quote_accept_sets_assigned_on(app, client, login, make_user, make_advisor, make_tax_year, make_quote):
@@ -8,7 +8,7 @@ def test_quote_accept_sets_assigned_on(app, client, login, make_user, make_advis
     adv_id = make_advisor(advisor_user)
     cli = make_user(role="user")
     make_tax_year(cli, 2024, status="Review Quote")
-    make_quote(cli, 2024, adv_id, status="Pending")
+    make_quote(cli, 2024, adv_id, status="In Review")  # advisor has sent the offer
     login(cli)
 
     r = client.post("/quote_action", data={"tax_year": "2024", "advisor_id": str(adv_id), "action": "accept"})
@@ -16,6 +16,7 @@ def test_quote_accept_sets_assigned_on(app, client, login, make_user, make_advis
     with app.app_context():
         t = TaxYear.query.filter_by(user_id=cli, year=2024).first()
         assert t.assigned_on is not None and t.status == "Quote accepted"
+        assert t.advisor_id == adv_id  # engaged with the quoting advisor
 
 
 def test_quote_reject_stores_reason(app, client, login, make_user, make_advisor, make_tax_year, make_quote):
@@ -24,13 +25,47 @@ def test_quote_reject_stores_reason(app, client, login, make_user, make_advisor,
     adv_id = make_advisor(advisor_user)
     cli = make_user(role="user")
     make_tax_year(cli, 2024, status="Review Quote")
-    make_quote(cli, 2024, adv_id, status="Pending")
+    make_quote(cli, 2024, adv_id, status="In Review")  # advisor has sent the offer
     login(cli)
 
     client.post("/quote_action", data={"tax_year": "2024", "advisor_id": str(adv_id), "action": "reject", "comment": "zu teuer"})
     with app.app_context():
         q = Quote.query.filter_by(user_id=cli, tax_year=2024).first()
         assert q.rejection_reason == "zu teuer" and q.quote_status == "Rejected"
+
+
+def test_quote_accept_refused_before_offer_sent(app, client, login, make_user, make_advisor, make_tax_year, make_quote):
+    """Hardening: a still-'Pending' request (no offer sent) can't be accepted,
+    so a client can't engage an advisor / bypass the slot check."""
+    advisor_user = make_user(role="advisor")
+    adv_id = make_advisor(advisor_user)
+    cli = make_user(role="user")
+    make_tax_year(cli, 2024, status="Quote requested")
+    make_quote(cli, 2024, adv_id, status="Pending")  # advisor has NOT sent an offer yet
+    login(cli)
+
+    r = client.post("/quote_action", data={"tax_year": "2024", "advisor_id": str(adv_id), "action": "accept"})
+    assert r.status_code == 302
+    with app.app_context():
+        t = TaxYear.query.filter_by(user_id=cli, year=2024).first()
+        q = Quote.query.filter_by(user_id=cli, tax_year=2024).first()
+        assert t.advisor_id is None and t.status == "Quote requested"  # not engaged
+        assert q.quote_status == "Pending"  # unchanged
+
+
+def test_quote_accept_wrong_advisor_refused(app, client, login, make_user, make_advisor, make_tax_year, make_quote):
+    """Hardening: accepting with an advisor_id that didn't quote this year is a no-op."""
+    quoting = make_advisor(make_user(role="advisor"))
+    other = make_advisor(make_user(role="advisor"))
+    cli = make_user(role="user")
+    make_tax_year(cli, 2024, status="Review Quote")
+    make_quote(cli, 2024, quoting, status="In Review")
+    login(cli)
+
+    r = client.post("/quote_action", data={"tax_year": "2024", "advisor_id": str(other), "action": "accept"})
+    assert r.status_code == 302
+    with app.app_context():
+        assert TaxYear.query.filter_by(user_id=cli, year=2024).first().advisor_id is None
 
 
 def test_draft_reject_stores_comment(app, client, login, make_user, make_tax_year):
