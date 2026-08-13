@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.models import db, TaxYear, ChecklistAnswer, RequiredDocument
-from app.utils.questions import questions  # ✅ Import the questions dictionary
+from app.utils.questions import questions, document_names  # questions + upload-slot labels
 
 checklist_bp = Blueprint('checklist', __name__)
 
@@ -90,7 +90,7 @@ def checklist(year):
             required_doc = RequiredDocument(
                 user_id=user.id,
                 tax_year_id=tax_year.id,
-                document_name=question_data["question"]
+                document_name=document_names.get(step) or question_data["question"]
             )
             db.session.add(required_doc)
             db.session.commit()

@@ -72,3 +72,36 @@ questions = {
     71: {"question": "Hast du sonstige Vermögenswerte, welche zu versteuern sind (Gold, Silber, Bargeld oder andere Edelmetalle)?", "type": "buttons", "options": ["Ja", "Nein"], "requires_document": True},
     72: {"question": "Haben Sie bisher nicht versteuertes Einkommen und Vermögen, das Sie zur Nachbesteuerung anmelden möchten?", "type": "buttons", "options": ["Ja", "Nein"], "requires_document": True},
 }
+
+# Human-readable name of the document a client should upload for each
+# document-requiring question (shown as the upload-slot label). Falls back to
+# the question text when a step isn't listed.
+document_names = {
+    20: "Lohnausweis",
+    25: "Lohnausweis Nebenerwerb",
+    28: "Bescheinigung Versicherungsleistungen",
+    29: "Rentenbescheinigung (AHV/IV/Pensionskasse)",
+    30: "Bescheinigung Arbeitslosenkasse",
+    31: "Taggeldabrechnung (Kranken-/Unfall)",
+    32: "EO-Abrechnung",
+    33: "Nachweis Schenkung / Erbvorbezug",
+    36: "Nachweis Erbschaft",
+    38: "Nachweis unverteilte Erbschaft",
+    40: "Nachweis erhaltene Unterhaltsbeiträge",
+    41: "Bescheinigung Kapitalabfindung",
+    42: "Liegenschaftsunterlagen",
+    43: "Hypothekarzinsausweis",
+    51: "Belege Berufsauslagen",
+    52: "Schuldenverzeichnis / Zinsbescheinigung",
+    53: "Nachweis bezahlte Unterhaltsbeiträge",
+    55: "Säule-3a- / 2.-Säule-Bescheinigung",
+    56: "Belege Aus-/Weiterbildungskosten",
+    59: "Belege Krankheits-/Unfallkosten",
+    60: "Spendenbescheinigungen",
+    61: "Kontoauszug / Zinsausweis (Bank/Post)",
+    62: "Wertschriftenverzeichnis / eSteuerauszug",
+    63: "Beteiligungsnachweis / Wertschriftenbescheinigung",
+    70: "Versicherungsausweis (Rückkaufswert)",
+    71: "Nachweis übrige Vermögenswerte",
+    72: "Unterlagen zur Nachbesteuerung",
+}
