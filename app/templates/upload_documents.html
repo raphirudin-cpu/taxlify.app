@@ -88,6 +88,7 @@
 
       var uploadUrl = JSON.parse(document.getElementById("upload-url").textContent.trim());
       var requiredDocuments = JSON.parse(document.getElementById("required-documents-data").textContent);
+      var csrfToken = document.querySelector('#upload-form input[name="csrf_token"]').value;
 
       function checkAllFilesSelected() {
         return allDropzones.every(function (dz) { return dz.files && dz.files.length > 0; });
@@ -105,10 +106,14 @@
             url: uploadUrl.trim(), paramName: "file", autoProcessQueue: false,
             uploadMultiple: false, addRemoveLinks: true, clickable: el,
             maxFilesize: 5, acceptedFiles: ".pdf,.png,.jpg,.jpeg",
+            headers: { "X-CSRFToken": csrfToken },
             init: function () {
               this.complete = false;
               allDropzones.push(this);
-              this.on("sending", function (file, xhr, formData) { formData.append("id", doc.id); });
+              this.on("sending", function (file, xhr, formData) {
+                formData.append("id", doc.id);
+                formData.append("csrf_token", csrfToken);
+              });
               this.on("queuecomplete", function () {
                 this.complete = true;
                 if (allDropzones.every(function (dz) { return dz.complete; })) {
