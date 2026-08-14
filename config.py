@@ -74,8 +74,11 @@ class BaseConfig:
     MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or MAIL_USERNAME
 
     # --- Celery / Redis ---
-    CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+    # Fall back to REDIS_URL (the var Railway/Render set for a Redis service).
+    CELERY_BROKER_URL = (os.environ.get("CELERY_BROKER_URL")
+                         or os.environ.get("REDIS_URL") or "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = (os.environ.get("CELERY_RESULT_BACKEND")
+                             or os.environ.get("REDIS_URL") or "redis://localhost:6379/0")
 
     # --- Error monitoring / logging ---
     SENTRY_DSN = os.environ.get("SENTRY_DSN")  # unset => Sentry disabled
